@@ -8,23 +8,25 @@ use Illuminate\Database\Eloquent\Model;
 class BoMon extends Model
 {
     use HasFactory;
+
     protected $table = 'bomon';
-    protected $primaryKey = 'bomon_id';
-    protected $fillable = ['ten_bo_mon', 'khoa_id'];
+    protected $primaryKey = 'maBoMon';
+    public $timestamps = true;
 
-    public function khoa() {
-        return $this->belongsTo(Khoa::class, 'khoa_id', 'khoa_id');
+    protected $fillable = ['maKhoa', 'tenBoMon'];
+
+    public function khoa()
+    {
+        return $this->belongsTo(Khoa::class, 'maKhoa', 'maKhoa');
     }
 
-    public function nganhDaoTao() {
-        return $this->hasMany(NganhDaoTao::class, 'bomon_id', 'bomon_id');
+    public function nganh()
+    {
+        return $this->hasMany(Nganh::class, 'maBoMon', 'maBoMon');
     }
 
-    public function hocphan() {
-        return $this->hasMany(HocPhan::class, 'bomon_id', 'bomon_id');
-    }
-
-    public function giangvien() {
-        return $this->hasMany(User::class, 'bomon_id', 'bomon_id');
+    public function giangVien()
+    {
+        return $this->hasMany(GiangVien::class, 'maBoMon', 'maBoMon');
     }
 }

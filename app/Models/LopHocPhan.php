@@ -8,24 +8,37 @@ use Illuminate\Database\Eloquent\Model;
 class LopHocPhan extends Model
 {
     use HasFactory;
+
     protected $table = 'lophocphan';
-    protected $primaryKey = 'lophocphan_id';
-    protected $fillable = ['ten_LHP', 'max_sv', 'loai', 'hocphan_id', 'giaidoan_id', 'giangvien_chinh_id', 'parent_lhp_id'];
+    protected $primaryKey = 'maLopHP';
+    public $timestamps = true;
 
-    public function hocphan() {
-        return $this->belongsTo(HocPhan::class, 'hocphan_id', 'hocphan_id');
+    protected $fillable = [
+        'maMon', 'maGV', 'maSoLopHP', 'hocKy', 'namHoc', 'thongTinLichHoc'
+    ];
+
+    public function monHoc()
+    {
+        return $this->belongsTo(MonHoc::class, 'maMon', 'maMon');
     }
 
-    public function giangvien() {
-        return $this->belongsTo(User::class, 'giangvien_chinh_id', 'user_id');
+    public function giangVien()
+    {
+        return $this->belongsTo(GiangVien::class, 'maGV', 'maGV');
     }
 
-    public function buoihoc() {
-        return $this->hasMany(BuoiHocKeHoach::class, 'lophocphan_id', 'lophocphan_id');
+    public function buoiHoc()
+    {
+        return $this->hasMany(BuoiHoc::class, 'maLopHP', 'maLopHP');
     }
 
-    public function sinhvien() {
-        return $this->belongsToMany(User::class, 'enrollments', 'lophocphan_id', 'sinhvien_id')
-                    ->withPivot(['ty_le_nghi', 'trang_thai_hoc'])->withTimestamps();
+    public function sinhVien()
+    {
+        return $this->belongsToMany(SinhVien::class, 'dangkyhoc', 'maLopHP', 'maSV');
+    }
+
+    public function dangKyHoc()
+    {
+        return $this->hasMany(DangKyHoc::class, 'maLopHP', 'maLopHP');
     }
 }

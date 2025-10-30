@@ -5,11 +5,19 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class LopHocPhanSeeder extends Seeder {
-    public function run(): void {
+class LopHocPhanSeeder extends Seeder
+{
+    public function run(): void
+    {
         DB::table('lophocphan')->insert([
-            ['ten_LHP' => 'Lập trình Java - Nhóm 1', 'hocphan_id' => 1, 'giaidoan_id' => 1, 'giangvien_chinh_id' => 2, 'loai' => 'LT', 'max_sv' => 60],
-            ['ten_LHP' => 'Cơ sở dữ liệu - Nhóm 2', 'hocphan_id' => 2, 'giaidoan_id' => 1, 'giangvien_chinh_id' => 3, 'loai' => 'LT', 'max_sv' => 60],
+            'maMon' => 1,
+            'maGV' => 1,
+            'maSoLopHP' => 'SE101-L01',
+            'hocKy' => 'HK1',
+            'namHoc' => '2024-2025',
+            'thongTinLichHoc' => 'Thứ 2 tiết 1-3, phòng A201',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 }

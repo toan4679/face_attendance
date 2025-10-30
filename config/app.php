@@ -1,40 +1,59 @@
 <?php
 
+use Illuminate\Support\Facades\Facade;
+
 return [
 
     /*
     |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
+    |
+    | Tên của ứng dụng. Bạn có thể thay đổi trong file .env (APP_NAME)
+    |
     */
-    'name' => env('APP_NAME', 'Laravel'),
+
+    'name' => env('APP_NAME', 'Face Attendance System'),
 
     /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
+    |
+    | Environment hiện tại của ứng dụng: "local", "production", v.v.
+    |
     */
-    'env' => env('APP_ENV', 'production'),
+
+    'env' => env('APP_ENV', 'local'),
 
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
+    |
+    | Nếu true, Laravel sẽ hiển thị lỗi chi tiết. 
+    | Không nên bật trong môi trường production.
+    |
     */
-    'debug' => (bool) env('APP_DEBUG', false),
+
+    'debug' => (bool) env('APP_DEBUG', true),
 
     /*
     |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     */
+
     'url' => env('APP_URL', 'http://localhost'),
+
+    'asset_url' => env('ASSET_URL', null),
 
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     */
+
     'timezone' => 'Asia/Ho_Chi_Minh',
 
     /*
@@ -42,48 +61,45 @@ return [
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     */
-    'locale' => env('APP_LOCALE', 'vi'),
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
-    'faker_locale' => env('APP_FAKER_LOCALE', 'vi_VN'),
+
+    'locale' => 'vi',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Faker Locale
+    |--------------------------------------------------------------------------
+    */
+
+    'faker_locale' => 'vi_VN',
 
     /*
     |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     */
-    'cipher' => 'AES-256-CBC',
-    'key' => env('APP_KEY'),
-    'previous_keys' => [
-        ...array_filter(
-            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
-        ),
-    ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Maintenance Mode Driver
-    |--------------------------------------------------------------------------
-    */
-    'maintenance' => [
-        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
-        'store' => env('APP_MAINTENANCE_STORE', 'database'),
-    ],
+    'key' => env('APP_KEY'),
+
+    'cipher' => 'AES-256-CBC',
 
     /*
     |--------------------------------------------------------------------------
     | Autoloaded Service Providers
     |--------------------------------------------------------------------------
     |
-    | Các provider này được Laravel tự động nạp khi khởi động ứng dụng.
-    | Đảm bảo có RouteServiceProvider để hệ thống load routes (web + api).
+    | Đây là nơi bạn khai báo tất cả các service provider của framework.
+    | Laravel sẽ tự động load tất cả khi khởi động ứng dụng.
     |
     */
 
     'providers' => [
 
         /*
-        * Service Providers mặc định của Laravel
+        |--------------------------------------------------------------------------
+        | Laravel Framework Service Providers
+        |--------------------------------------------------------------------------
         */
+
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
         Illuminate\Bus\BusServiceProvider::class,
@@ -108,12 +124,24 @@ return [
         Illuminate\View\ViewServiceProvider::class,
 
         /*
-        * Service Providers của ứng dụng bạn
+        |--------------------------------------------------------------------------
+        | Application Service Providers
+        |--------------------------------------------------------------------------
         */
+
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Class Aliases
+    |--------------------------------------------------------------------------
+    |
+    | Các facade alias sẽ được La
+ravel tự động đăng ký.
+    |
+*/                  
 ];

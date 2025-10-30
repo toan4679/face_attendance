@@ -2,46 +2,74 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Admin;
+use App\Models\PhongDaoTao;
+use App\Models\GiangVien;
+use App\Models\SinhVien;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-            'ho_ten' => 'required|string',
-            'role' => 'required|in:ADMIN,PDT,GV,SV,BGH'
-        ]);
-
-        $validated['password'] = Hash::make($validated['password']);
-        $user = User::create($validated);
-
-        return response()->json(['message' => 'Đăng ký thành công', 'user' => $user], 201);
-    }
-
     public function login(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
+            'loai' => 'required|in:admin,pdt,giangvien,sinhvien'
         ]);
 
-        $user = User::where('email', $request->email)->first();
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Sai thông tin đăng nhập'], 401);
-        }
+        $map = [
+            'admin'     => Admin::class,
+            'pdt'       => PhongDaoTao::class,
+            'giangvien' => GiangVien::class,
+            'sinhvien'  => SinhVien::class,
+        ];
 
-        $token = $user->createToken('api-token')->plainTextToken;
-        return response()->json(['user' => $user, 'token' => $token]);
+        $model = $map[$data['loai']];
+        $user  = $model::where('email', $data['email'])->first();
+
+        if (!$user || !Hash::check($data['password'], $user->matKhau)) {
+            return response()->json(['error'=>['code'=>'UNAUTHORIZED','message'=>'Email hoặc mật khẩu không đúng']], 401);
+        }
+        $token = $user->createToken('api')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => [
+                'id' => $user->getKey(),
+                'hoTen' => $user->hoTen ?? ($user->name ?? null),
+                'vaiTro'=> $data['loai']
+            ]
+        ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
-        return response()->json(['message' => 'Đăng xuất thành công']);
+        $request->user()?->currentAccessToken()?->delete();
+        return response()->json(null, 204);
+    }
+
+    public function refresh(Request $request)
+    {
+        $user = $request->user();
+        $request->user()?->currentAccessToken()?->delete();
+        $token = $user->createToken('api')->plainTextToken;
+        return response()->json(['token'=>$token]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $data = $request->validate([
+            'old_password' => 'required',
+            'new_password' => 'required|min:6'
+        ]);
+        $user = $request->user();
+        if (!\Illuminate\Support\Facades\Hash::check($data['old_password'], $user->matKhau)) {
+            return response()->json(['error'=>['code'=>'VALIDATION_ERROR','message'=>'Mật khẩu cũ không đúng']], 422);
+        }
+        $user->matKhau = \Illuminate\Support\Facades\Hash::make($data['new_password']);
+        $user->save();
+        return response()->json(null, 204);
     }
 }
