@@ -14,7 +14,14 @@ class GiangVien extends Authenticatable
     protected $primaryKey = 'maGV';
     public $timestamps = true;
 
-    protected $fillable = ['maBoMon', 'hoTen', 'email', 'matKhau', 'soDienThoai', 'hocVi'];
+    protected $fillable = [
+        'hoTen',
+        'email',
+        'matKhau',
+        'maBoMon',
+        'hocVi',
+        'soDienThoai',
+    ];
 
     protected $hidden = ['matKhau'];
 
