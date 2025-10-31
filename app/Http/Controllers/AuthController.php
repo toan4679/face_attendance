@@ -12,6 +12,9 @@ use App\Models\SinhVien;
 
 class AuthController extends Controller
 {
+    /**
+     * Đăng ký tài khoản Giảng viên hoặc Sinh viên
+     */
     public function register(Request $request)
     {
         $data = $request->validate([
@@ -27,14 +30,14 @@ class AuthController extends Controller
         ]);
 
         $modelMap = [
-            'giangvien' => \App\Models\GiangVien::class,
-            'sinhvien'  => \App\Models\SinhVien::class,
+            'giangvien' => GiangVien::class,
+            'sinhvien'  => SinhVien::class,
         ];
 
         $model = $modelMap[$data['loai']];
 
-        // Hash password
-        $hashedPassword = \Illuminate\Support\Facades\Hash::make($data['matKhau']);
+        // Hash mật khẩu
+        $hashedPassword = Hash::make($data['matKhau']);
 
         if ($data['loai'] === 'giangvien') {
             $user = $model::create([
@@ -71,13 +74,15 @@ class AuthController extends Controller
         ], 201);
     }
 
-
+    /**
+     * Đăng nhập cho 4 loại tài khoản
+     */
     public function login(Request $request)
     {
         $data = $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
-            'loai' => 'required|in:admin,pdt,giangvien,sinhvien'
+            'matKhau' => 'required|string',
+            'loai' => 'required|in:admin,pdt,giangvien,sinhvien',
         ]);
 
         $map = [
@@ -88,49 +93,77 @@ class AuthController extends Controller
         ];
 
         $model = $map[$data['loai']];
-        $user  = $model::where('email', $data['email'])->first();
+        $user = $model::where('email', $data['email'])->first();
 
-        if (!$user || !Hash::check($data['password'], $user->matKhau)) {
-            return response()->json(['error' => ['code' => 'UNAUTHORIZED', 'message' => 'Email hoặc mật khẩu không đúng']], 401);
+        if (!$user || !Hash::check($data['matKhau'], $user->matKhau)) {
+            return response()->json([
+                'error' => [
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Email hoặc mật khẩu không đúng',
+                ]
+            ], 401);
         }
+
+        // Tạo token Sanctum
         $token = $user->createToken('api')->plainTextToken;
 
         return response()->json([
+            'message' => 'Đăng nhập thành công',
             'token' => $token,
-            'user'  => [
+            'user' => [
                 'id' => $user->getKey(),
                 'hoTen' => $user->hoTen ?? ($user->name ?? null),
-                'vaiTro' => $data['loai']
+                'email' => $user->email,
+                'vaiTro' => $data['loai'],
             ]
-        ]);
+        ], 200);
     }
 
+    /**
+     * Đăng xuất
+     */
     public function logout(Request $request)
     {
         $request->user()?->currentAccessToken()?->delete();
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Đăng xuất thành công'], 200);
     }
 
+    /**
+     * Làm mới token (refresh)
+     */
     public function refresh(Request $request)
     {
         $user = $request->user();
         $request->user()?->currentAccessToken()?->delete();
         $token = $user->createToken('api')->plainTextToken;
-        return response()->json(['token' => $token]);
+
+        return response()->json(['token' => $token], 200);
     }
 
+    /**
+     * Đổi mật khẩu
+     */
     public function changePassword(Request $request)
     {
         $data = $request->validate([
-            'old_password' => 'required',
-            'new_password' => 'required|min:6'
+            'old_password' => 'required|string',
+            'new_password' => 'required|string|min:6',
         ]);
+
         $user = $request->user();
-        if (!\Illuminate\Support\Facades\Hash::check($data['old_password'], $user->matKhau)) {
-            return response()->json(['error' => ['code' => 'VALIDATION_ERROR', 'message' => 'Mật khẩu cũ không đúng']], 422);
+
+        if (!Hash::check($data['old_password'], $user->matKhau)) {
+            return response()->json([
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => 'Mật khẩu cũ không đúng',
+                ]
+            ], 422);
         }
-        $user->matKhau = \Illuminate\Support\Facades\Hash::make($data['new_password']);
+
+        $user->matKhau = Hash::make($data['new_password']);
         $user->save();
-        return response()->json(null, 204);
+
+        return response()->json(['message' => 'Đổi mật khẩu thành công'], 200);
     }
 }
