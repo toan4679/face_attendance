@@ -49,14 +49,14 @@ class AuthController extends Controller
                 'soDienThoai' => null,
             ]);
         } else {
-            $user = $model::create([
+            $userData = [
                 'maSo' => strtoupper('SV' . rand(1000, 9999)),
                 'hoTen' => $data['hoTen'],
                 'email' => $data['email'],
                 'matKhau' => $hashedPassword,
-                'maNganh' => null,
-                'soDienThoai' => null,
-            ]);
+            ];
+
+            $user = $model::create($userData);
         }
 
         // Tạo token Sanctum
