@@ -27,7 +27,7 @@ Route::prefix('v1')->group(function () {
 
     // Auth
     Route::post('auth/login', [AuthController::class, 'login']);
-    Route::post('auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::post('auth/refresh', [AuthController::class, 'refresh']); // optional
@@ -35,7 +35,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // Admin
-    Route::middleware(['auth:sanctum','role:admin'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::post('admin/pdt', [AdminPDTController::class, 'store']);
         Route::get('admin/pdt', [AdminPDTController::class, 'index']);
         Route::patch('admin/pdt/{id}', [AdminPDTController::class, 'update']);
@@ -44,7 +44,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // PĐT
-    Route::middleware(['auth:sanctum','role:pdt'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:pdt'])->group(function () {
         Route::apiResource('khoa', KhoaController::class);
         Route::apiResource('bomon', BoMonController::class);
         Route::apiResource('nganh', NganhController::class);
@@ -52,7 +52,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('giangvien', GiangVienController::class);
         Route::apiResource('sinhvien', SinhVienController::class);
         Route::apiResource('lophocphan', LopHocPhanController::class);
-        Route::apiResource('buoihoc', BuoiHocController::class)->only(['index','store','show','update','destroy']);
+        Route::apiResource('buoihoc', BuoiHocController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
         Route::post('dangkyhoc', [DangKyHocController::class, 'store']);
         Route::delete('dangkyhoc/{id}', [DangKyHocController::class, 'destroy']);
 
@@ -68,7 +68,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // Giảng viên
-    Route::middleware(['auth:sanctum','role:giangvien'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:giangvien'])->group(function () {
         Route::get('giangvien/lichday', [LichDayController::class, 'index']);
         Route::get('giangvien/lophocphan', [LopHocPhanController::class, 'byGiangVien']);
 
@@ -81,7 +81,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // Sinh viên
-    Route::middleware(['auth:sanctum','role:sinhvien'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:sinhvien'])->group(function () {
         Route::get('sinhvien/lichhoc', [LichHocController::class, 'index']);
         Route::get('sinhvien/diemdanh', [CheckInController::class, 'history']);
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Admin;
@@ -16,13 +17,13 @@ class AuthController extends Controller
         $data = $request->validate([
             'loai' => 'required|in:giangvien,sinhvien',
             'hoTen' => 'required|string|max:100',
-            'email' => 'required|email|unique:sinhvien,email|unique:giangvien,email',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('sinhvien', 'email'),
+                Rule::unique('giangvien', 'email'),
+            ],
             'matKhau' => 'required|string|min:6|confirmed',
-            'soDienThoai' => 'nullable|string|max:20',
-            'maSo' => 'nullable|string|max:20', // cho sinh viên
-            'maNganh' => 'nullable|integer|exists:nganh,maNganh',
-            'maBoMon' => 'nullable|integer|exists:bomon,maBoMon',
-            'hocVi' => 'nullable|string|max:50'
         ]);
 
         $modelMap = [
@@ -33,30 +34,29 @@ class AuthController extends Controller
         $model = $modelMap[$data['loai']];
 
         // Hash password
-        $data['matKhau'] = \Illuminate\Support\Facades\Hash::make($data['matKhau']);
+        $hashedPassword = \Illuminate\Support\Facades\Hash::make($data['matKhau']);
 
-        // Chuẩn hóa field theo loại
         if ($data['loai'] === 'giangvien') {
             $user = $model::create([
                 'hoTen' => $data['hoTen'],
                 'email' => $data['email'],
-                'matKhau' => $data['matKhau'],
-                'maBoMon' => $data['maBoMon'],
-                'hocVi' => $data['hocVi'] ?? null,
-                'soDienThoai' => $data['soDienThoai'] ?? null,
+                'matKhau' => $hashedPassword,
+                'maBoMon' => null,
+                'hocVi' => null,
+                'soDienThoai' => null,
             ]);
-        } else { // sinhvien
+        } else {
             $user = $model::create([
-                'maSo' => $data['maSo'] ?? strtoupper('SV' . rand(1000, 9999)),
+                'maSo' => strtoupper('SV' . rand(1000, 9999)),
                 'hoTen' => $data['hoTen'],
                 'email' => $data['email'],
-                'matKhau' => $data['matKhau'],
-                'maNganh' => $data['maNganh'],
-                'soDienThoai' => $data['soDienThoai'] ?? null,
+                'matKhau' => $hashedPassword,
+                'maNganh' => null,
+                'soDienThoai' => null,
             ]);
         }
 
-        // Tạo token tự động
+        // Tạo token Sanctum
         $token = $user->createToken('api')->plainTextToken;
 
         return response()->json([
@@ -65,11 +65,12 @@ class AuthController extends Controller
                 'id' => $user->getKey(),
                 'hoTen' => $user->hoTen,
                 'email' => $user->email,
-                'vaiTro' => $data['loai']
+                'vaiTro' => $data['loai'],
             ],
-            'token' => $token
+            'token' => $token,
         ], 201);
     }
+
 
     public function login(Request $request)
     {
