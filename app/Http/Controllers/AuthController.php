@@ -82,9 +82,9 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => 'required|email',
             'matKhau' => 'required|string',
-            'loai' => 'required|in:admin,pdt,giangvien,sinhvien',
         ]);
 
+        // Danh sách model ứng với từng role
         $map = [
             'admin'     => Admin::class,
             'pdt'       => PhongDaoTao::class,
@@ -92,14 +92,35 @@ class AuthController extends Controller
             'sinhvien'  => SinhVien::class,
         ];
 
-        $model = $map[$data['loai']];
-        $user = $model::where('email', $data['email'])->first();
+        $user = null;
+        $role = null;
 
-        if (!$user || !Hash::check($data['matKhau'], $user->matKhau)) {
+        // ✅ Tự động tìm xem email này thuộc role nào
+        foreach ($map as $key => $model) {
+            $candidate = $model::where('email', $data['email'])->first();
+            if ($candidate) {
+                $user = $candidate;
+                $role = $key;
+                break;
+            }
+        }
+
+        // Không tìm thấy email trong bất kỳ bảng nào
+        if (!$user) {
+            return response()->json([
+                'error' => [
+                    'code' => 'USER_NOT_FOUND',
+                    'message' => 'Email không tồn tại trong hệ thống',
+                ]
+            ], 404);
+        }
+
+        // Check mật khẩu
+        if (!Hash::check($data['matKhau'], $user->matKhau)) {
             return response()->json([
                 'error' => [
                     'code' => 'UNAUTHORIZED',
-                    'message' => 'Email hoặc mật khẩu không đúng',
+                    'message' => 'Mật khẩu không chính xác',
                 ]
             ], 401);
         }
@@ -114,7 +135,7 @@ class AuthController extends Controller
                 'id' => $user->getKey(),
                 'hoTen' => $user->hoTen ?? ($user->name ?? null),
                 'email' => $user->email,
-                'vaiTro' => $data['loai'],
+                'vaiTro' => $role,
             ]
         ], 200);
     }
