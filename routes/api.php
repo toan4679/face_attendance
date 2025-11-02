@@ -92,4 +92,9 @@ Route::prefix('v1')->group(function () {
         Route::post('attendance/check-in/qr', [CheckInController::class, 'checkInQR']);
         Route::post('attendance/check-in/face', [CheckInController::class, 'checkInFace']);
     });
+
+    Route::prefix('v1')->group(function () {
+        Route::post('/buoihoc', [BuoihocController::class, 'store']); // Thêm lịch dạy
+        Route::get('/buoihoc/giangvien/{maGV}', [BuoihocController::class, 'getByGiangVien']); // Lấy lịch dạy theo GV
+    });
 });
