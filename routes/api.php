@@ -59,7 +59,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin'])->group(fun
 |--------------------------------------------------------------------------
 | Quản lý Khoa, Bộ môn, Ngành, Môn học, Giảng viên, Sinh viên, Lớp học phần, ...
 */
-Route::prefix('v1/pdt')->group(function () {
+Route::prefix('v1/pdt')->middleware(['auth:sanctum', 'role:pdt'])->group(function () {
     Route::get('/dashboard/stats', [PDTController::class, 'getDashboardStats']);
 
     // Quản lý danh mục
