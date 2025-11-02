@@ -2,44 +2,63 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Buoihoc;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\BuoiHoc;
 
-class BuoihocController extends Controller
+class BuoiHocController extends Controller
 {
-    // ✅ Thêm lịch dạy mới
+    /** Lấy danh sách buổi học */
+    public function index()
+    {
+        return BuoiHoc::all();
+    }
+
+    /** Thêm buổi học mới */
     public function store(Request $request)
     {
         $data = $request->validate([
             'maLopHP' => 'required|exists:lophocphan,maLopHP',
             'maGV' => 'required|exists:giangvien,maGV',
             'ngayHoc' => 'required|date',
-            'gioBatDau' => 'required|date_format:H:i',
-            'gioKetThuc' => 'required|date_format:H:i|after:gioBatDau',
-            'phongHoc' => 'nullable|string|max:50',
+            'gioBatDau' => 'required',
+            'gioKetThuc' => 'required',
+            'phongHoc' => 'required|string|max:50',
+            'maQR' => 'nullable|string|max:100',
         ]);
 
-        $data['maQR'] = 'QR' . strtoupper(uniqid());
-        $buoi = Buoihoc::create($data);
-
-        return response()->json([
-            'message' => 'Tạo lịch dạy thành công',
-            'buoiHoc' => $buoi
-        ], 201);
+        $buoi = BuoiHoc::create($data);
+        return response()->json($buoi, 201);
     }
 
-    // ✅ Lấy danh sách lịch dạy của một giảng viên
+    /** ✅ Lấy lịch dạy của giảng viên */
     public function getByGiangVien($maGV)
     {
-        $lichDay = Buoihoc::where('maGV', $maGV)
-            ->with(['lopHocPhan'])
-            ->orderBy('ngayHoc', 'asc')
+        $lichDay = DB::table('buoihoc as b')
+            ->join('lophocphan as l', 'b.maLopHP', '=', 'l.maLopHP')
+            ->join('monhoc as m', 'l.maMon', '=', 'm.maMon')
+            ->select(
+                'b.maBuoi',
+                'm.tenMon',
+                'l.maSoLopHP',
+                'b.ngayHoc',
+                'b.gioBatDau',
+                'b.gioKetThuc',
+                'b.phongHoc',
+                'b.maQR'
+            )
+            ->where('b.maGV', $maGV)
+            ->orderBy('b.ngayHoc', 'asc')
             ->get();
 
         if ($lichDay->isEmpty()) {
-            return response()->json(['message' => 'Không có lịch dạy'], 404);
+            return response()->json(['message' => 'Giảng viên chưa có lịch dạy'], 404);
         }
 
-        return response()->json($lichDay, 200);
+        return response()->json([
+            'maGV' => $maGV,
+            'tongBuoi' => $lichDay->count(),
+            'lichDay' => $lichDay
+        ]);
     }
 }

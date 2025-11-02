@@ -3,37 +3,41 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\BuoiHoc;
-use App\Models\LopHocPhan;
-use App\Models\DangKyHoc;
+use Illuminate\Support\Facades\DB;
 
 class LichDayController extends Controller
 {
+    /** ✅ Lấy lịch dạy của giảng viên đang đăng nhập */
     public function index(Request $request)
     {
-        $gv = $request->user();
-        $from = $request->get('from');
-        $to   = $request->get('to');
+        $user = $request->user();
+        $maGV = $user->maGV ?? null;
 
-        $q = BuoiHoc::where('maGV', $gv->maGV);
-        if ($from) $q->whereDate('ngayHoc', '>=', $from);
-        if ($to)   $q->whereDate('ngayHoc', '<=', $to);
+        if (!$maGV) {
+            return response()->json(['error' => 'Không tìm thấy mã giảng viên'], 400);
+        }
 
-        return response()->json($q->orderBy('ngayHoc')->get());
-    }
-}
+        $lich = DB::table('buoihoc as b')
+            ->join('lophocphan as l', 'b.maLopHP', '=', 'l.maLopHP')
+            ->join('monhoc as m', 'l.maMon', '=', 'm.maMon')
+            ->select(
+                'b.maBuoi',
+                'm.tenMon',
+                'l.maSoLopHP',
+                'b.ngayHoc',
+                'b.gioBatDau',
+                'b.gioKetThuc',
+                'b.phongHoc'
+            )
+            ->where('b.maGV', $maGV)
+            ->orderBy('b.ngayHoc')
+            ->get();
 
-class LichHocController extends Controller
-{
-    public function index(Request $request)
-    {
-        $sv = $request->user();
-        $lopIds = DangKyHoc::where('maSV', $sv->maSV)->pluck('maLopHP');
-
-        $q = BuoiHoc::whereIn('maLopHP', $lopIds);
-        if ($f = $request->get('from')) $q->whereDate('ngayHoc','>=',$f);
-        if ($t = $request->get('to'))   $q->whereDate('ngayHoc','<=',$t);
-
-        return response()->json($q->orderBy('ngayHoc')->get());
+        return response()->json([
+            'giangVien' => $user->hoTen,
+            'maGV' => $maGV,
+            'soBuoi' => $lich->count(),
+            'lichDay' => $lich
+        ]);
     }
 }
