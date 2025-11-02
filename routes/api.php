@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminPDTController;
+use App\Http\Controllers\PDTController;
 use App\Http\Controllers\KhoaController;
 use App\Http\Controllers\BoMonController;
 use App\Http\Controllers\NganhController;
@@ -18,88 +19,113 @@ use App\Http\Controllers\QRController;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\LichDayController;
 use App\Http\Controllers\LichHocController;
-use App\Http\Controllers\PDTController;
 
 Route::get('/test', fn() => response()->json(['ok' => true]));
 
-Route::prefix('v1')->group(function () {
-
-    /* ========== AUTHENTICATION ========== */
-    Route::post('auth/login', [AuthController::class, 'login']);
-    Route::post('auth/register', [AuthController::class, 'register']);
+/*
+|--------------------------------------------------------------------------
+| AUTH
+|--------------------------------------------------------------------------
+| Đăng nhập, đăng ký, đổi mật khẩu, refresh token
+*/
+Route::prefix('v1/auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
 
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('auth/logout', [AuthController::class, 'logout']);
-        Route::post('auth/refresh', [AuthController::class, 'refresh']);
-        Route::post('auth/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
+});
 
-    /* ========== ADMIN ========== */
-    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-        Route::apiResource('admin/pdt', AdminPDTController::class)->except(['show']);
-        Route::post('admin/reset-password', [AdminPDTController::class, 'resetPassword']);
-    });
+/*
+|--------------------------------------------------------------------------
+| ADMIN
+|--------------------------------------------------------------------------
+| Quản lý tài khoản PĐT, reset mật khẩu, ...
+*/
+Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::post('/pdt', [AdminPDTController::class, 'store']);
+    Route::get('/pdt', [AdminPDTController::class, 'index']);
+    Route::patch('/pdt/{id}', [AdminPDTController::class, 'update']);
+    Route::delete('/pdt/{id}', [AdminPDTController::class, 'destroy']);
+    Route::post('/reset-password', [AdminPDTController::class, 'resetPassword']);
+});
 
-    /* ========== PHÒNG ĐÀO TẠO ========== */
-    Route::middleware(['auth:sanctum', 'role:pdt'])->prefix('pdt')->group(function () {
-        // Dashboard
-        Route::get('dashboard/stats', [PDTController::class, 'getDashboardStats']);
-        Route::post('gan-lich', [PDTController::class, 'assignSchedule']);
+/*
+|--------------------------------------------------------------------------
+| PHÒNG ĐÀO TẠO (PĐT)
+|--------------------------------------------------------------------------
+| Quản lý Khoa, Bộ môn, Ngành, Môn học, Giảng viên, Sinh viên, Lớp học phần, ...
+*/
+Route::prefix('v1/pdt')->middleware(['auth:sanctum', 'role:pdt'])->group(function () {
+    // Dashboard thống kê
+    Route::get('/dashboard/stats', [PDTController::class, 'getDashboardStats']);
 
-        // Quản lý danh mục
-        Route::apiResource('khoa', KhoaController::class);
-        Route::apiResource('bomon', BoMonController::class);
-        Route::apiResource('nganh', NganhController::class);
-        Route::apiResource('monhoc', MonHocController::class);
+    // Quản lý danh mục
+    Route::apiResource('khoa', KhoaController::class);
+    Route::apiResource('bomon', BoMonController::class);
+    Route::apiResource('nganh', NganhController::class);
+    Route::apiResource('monhoc', MonHocController::class);
 
-        // Quản lý nhân sự và học viên
-        Route::apiResource('giangvien', GiangVienController::class);
-        Route::apiResource('sinhvien', SinhVienController::class);
+    // Quản lý giảng viên, sinh viên, lớp học phần
+    Route::apiResource('giangvien', GiangVienController::class);
+    Route::apiResource('sinhvien', SinhVienController::class);
+    Route::apiResource('lophocphan', LopHocPhanController::class);
 
-        // Lớp học phần & buổi học
-        Route::apiResource('lophocphan', LopHocPhanController::class);
-        Route::apiResource('buoihoc', BuoiHocController::class);
+    // Buổi học
+    Route::apiResource('buoihoc', BuoiHocController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
-        // Đăng ký học
-        Route::post('dangkyhoc', [DangKyHocController::class, 'store']);
-        Route::delete('dangkyhoc/{id}', [DangKyHocController::class, 'destroy']);
+    // Gán lịch dạy cho giảng viên
+    Route::post('/schedule/assign', [PDTController::class, 'assignSchedule']);
 
-        // Khuôn mặt sinh viên (duyệt)
-        Route::get('khuonmat/pending', [KhuonMatController::class, 'pending']);
-        Route::post('khuonmat/{id}/approve', [KhuonMatController::class, 'approve']);
-        Route::post('khuonmat/{id}/reject', [KhuonMatController::class, 'reject']);
+    // Quản lý khuôn mặt sinh viên (duyệt, từ chối)
+    Route::get('/khuonmat/pending', [KhuonMatController::class, 'pending']);
+    Route::post('/khuonmat/{id}/approve', [KhuonMatController::class, 'approve']);
+    Route::post('/khuonmat/{id}/reject', [KhuonMatController::class, 'reject']);
 
-        // Thông báo
-        Route::apiResource('thongbao', ThongBaoController::class)->only(['index', 'store', 'destroy']);
-    });
+    // Thông báo
+    Route::get('/thongbao', [ThongBaoController::class, 'index']);
+    Route::post('/thongbao', [ThongBaoController::class, 'store']);
+    Route::delete('/thongbao/{id}', [ThongBaoController::class, 'destroy']);
+});
 
-    /* ========== GIẢNG VIÊN ========== */
-    Route::middleware(['auth:sanctum', 'role:giangvien'])->prefix('giangvien')->group(function () {
-        Route::get('lichday', [LichDayController::class, 'index']);
-        Route::get('lophocphan', [LopHocPhanController::class, 'byGiangVien']);
+/*
+|--------------------------------------------------------------------------
+| GIẢNG VIÊN
+|--------------------------------------------------------------------------
+| Quản lý điểm danh, QR, xem lịch dạy, xuất báo cáo
+*/
+Route::prefix('v1/giangvien')->middleware(['auth:sanctum', 'role:giangvien'])->group(function () {
+    Route::get('/lichday', [LichDayController::class, 'index']);
+    Route::get('/lophocphan', [LopHocPhanController::class, 'byGiangVien']);
 
-        Route::post('buoihoc/{maBuoi}/qr', [QRController::class, 'generate']);
-        Route::post('buoihoc/{maBuoi}/close', [QRController::class, 'close']);
+    // QR điểm danh
+    Route::post('/buoihoc/{maBuoi}/qr', [QRController::class, 'generate']);
+    Route::post('/buoihoc/{maBuoi}/close', [QRController::class, 'close']);
 
-        Route::get('buoihoc/{maBuoi}/diemdanh', [CheckInController::class, 'listByBuoi']);
-        Route::patch('diemdanh/{id}', [CheckInController::class, 'updateStatus']);
-    });
+    // Điểm danh sinh viên
+    Route::get('/buoihoc/{maBuoi}/diemdanh', [CheckInController::class, 'listByBuoi']);
+    Route::patch('/diemdanh/{id}', [CheckInController::class, 'updateStatus']);
+});
 
-    /* ========== SINH VIÊN ========== */
-    Route::middleware(['auth:sanctum', 'role:sinhvien'])->prefix('sinhvien')->group(function () {
-        Route::get('lichhoc', [LichHocController::class, 'index']);
-        Route::get('diemdanh', [CheckInController::class, 'history']);
+/*
+|--------------------------------------------------------------------------
+| SINH VIÊN
+|--------------------------------------------------------------------------
+| Theo dõi lịch học, điểm danh bằng khuôn mặt hoặc QR
+*/
+Route::prefix('v1/sinhvien')->middleware(['auth:sanctum', 'role:sinhvien'])->group(function () {
+    Route::get('/lichhoc', [LichHocController::class, 'index']);
+    Route::get('/diemdanh', [CheckInController::class, 'history']);
 
-        // Dữ liệu khuôn mặt
-        Route::post('khuonmat', [KhuonMatController::class, 'store']);
-        Route::get('khuonmat', [KhuonMatController::class, 'showMine']);
-        Route::delete('khuonmat/{id}', [KhuonMatController::class, 'destroyMine']);
+    // Quản lý dữ liệu khuôn mặt
+    Route::post('/khuonmat', [KhuonMatController::class, 'store']);
+    Route::get('/khuonmat', [KhuonMatController::class, 'showMine']);
+    Route::delete('/khuonmat/{id}', [KhuonMatController::class, 'destroyMine']);
 
-        // Điểm danh
-        Route::post('attendance/check-in/qr', [CheckInController::class, 'checkInQR']);
-        Route::post('attendance/check-in/face', [CheckInController::class, 'checkInFace']);
-    });
-
-    /* ========== PUBLIC TEST (Không cần token) ========== */
-    Route::get('buoihoc/giangvien/{maGV}', [BuoiHocController::class, 'getByGiangVien']);
+    // Điểm danh
+    Route::post('/attendance/check-in/qr', [CheckInController::class, 'checkInQR']);
+    Route::post('/attendance/check-in/face', [CheckInController::class, 'checkInFace']);
 });
