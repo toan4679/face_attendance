@@ -59,37 +59,36 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin'])->group(fun
 |--------------------------------------------------------------------------
 | Quản lý Khoa, Bộ môn, Ngành, Môn học, Giảng viên, Sinh viên, Lớp học phần, ...
 */
-Route::prefix('v1/pdt')->middleware(['auth:sanctum', \App\Http\Middleware\RoleMiddleware::class . ':pdt'])
-    ->group(function () {
-        Route::get('/dashboard/stats', [PDTController::class, 'getDashboardStats']);
+Route::prefix('v1/pdt')->middleware(['auth:sanctum', 'role:pdt'])->group(function () {
+    Route::get('/dashboard/stats', [PDTController::class, 'getDashboardStats']);
 
-        // Quản lý danh mục
-        Route::apiResource('khoa', KhoaController::class);
-        Route::apiResource('bomon', BoMonController::class);
-        Route::apiResource('nganh', NganhController::class);
-        Route::apiResource('monhoc', MonHocController::class);
+    // Quản lý danh mục
+    Route::apiResource('khoa', KhoaController::class);
+    Route::apiResource('bomon', BoMonController::class);
+    Route::apiResource('nganh', NganhController::class);
+    Route::apiResource('monhoc', MonHocController::class);
 
-        // Quản lý giảng viên, sinh viên, lớp học phần
-        Route::apiResource('giangvien', GiangVienController::class);
-        Route::apiResource('sinhvien', SinhVienController::class);
-        Route::apiResource('lophocphan', LopHocPhanController::class);
+    // Quản lý giảng viên, sinh viên, lớp học phần
+    Route::apiResource('giangvien', GiangVienController::class);
+    Route::apiResource('sinhvien', SinhVienController::class);
+    Route::apiResource('lophocphan', LopHocPhanController::class);
 
-        // Buổi học
-        Route::apiResource('buoihoc', BuoiHocController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    // Buổi học
+    Route::apiResource('buoihoc', BuoiHocController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
-        // Gán lịch dạy cho giảng viên
-        Route::post('/schedule/assign', [PDTController::class, 'assignSchedule']);
+    // Gán lịch dạy cho giảng viên
+    Route::post('/schedule/assign', [PDTController::class, 'assignSchedule']);
 
-        // Quản lý khuôn mặt sinh viên (duyệt, từ chối)
-        Route::get('/khuonmat/pending', [KhuonMatController::class, 'pending']);
-        Route::post('/khuonmat/{id}/approve', [KhuonMatController::class, 'approve']);
-        Route::post('/khuonmat/{id}/reject', [KhuonMatController::class, 'reject']);
+    // Quản lý khuôn mặt sinh viên (duyệt, từ chối)
+    Route::get('/khuonmat/pending', [KhuonMatController::class, 'pending']);
+    Route::post('/khuonmat/{id}/approve', [KhuonMatController::class, 'approve']);
+    Route::post('/khuonmat/{id}/reject', [KhuonMatController::class, 'reject']);
 
-        // Thông báo
-        Route::get('/thongbao', [ThongBaoController::class, 'index']);
-        Route::post('/thongbao', [ThongBaoController::class, 'store']);
-        Route::delete('/thongbao/{id}', [ThongBaoController::class, 'destroy']);
-    });
+    // Thông báo
+    Route::get('/thongbao', [ThongBaoController::class, 'index']);
+    Route::post('/thongbao', [ThongBaoController::class, 'store']);
+    Route::delete('/thongbao/{id}', [ThongBaoController::class, 'destroy']);
+});
 
 /*
 |--------------------------------------------------------------------------
