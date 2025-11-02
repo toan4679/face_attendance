@@ -6,40 +6,47 @@ use App\Models\GiangVien;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class GiangVienController extends BaseCrudController
+class GiangVienController extends Controller
 {
-    protected $model = GiangVien::class;
-    protected $searchable = ['hoTen','email','soDienThoai'];
-    protected $rulesCreate = [
-        'maBoMon' => 'required|exists:bomon,maBoMon',
-        'hoTen'   => 'required|string|max:100',
-        'email'   => 'required|email|unique:giangvien,email',
-        'matKhau' => 'required|min:6',
-        'soDienThoai' => 'nullable|string|max:20',
-        'hocVi'   => 'nullable|string|max:50'
-    ];
+    public function index()
+    {
+        return GiangVien::with('bomon')->get();
+    }
 
     public function store(Request $request)
     {
-        $data = $request->validate($this->rulesCreate);
+        $data = $request->validate([
+            'hoTen' => 'required|string|max:100',
+            'email' => 'required|email|unique:giangvien,email',
+            'matKhau' => 'required|string|min:6',
+            'maBoMon' => 'nullable|exists:bomon,maBoMon',
+            'hocVi' => 'nullable|string|max:50',
+            'soDienThoai' => 'nullable|string|max:15',
+        ]);
+
         $data['matKhau'] = Hash::make($data['matKhau']);
         $gv = GiangVien::create($data);
         return response()->json($gv, 201);
     }
 
+    public function show($id)
+    {
+        return GiangVien::with('bomon')->findOrFail($id);
+    }
+
     public function update(Request $request, $id)
     {
-        $gv   = GiangVien::findOrFail($id);
-        $data = $request->validate([
-            'maBoMon' => 'sometimes|exists:bomon,maBoMon',
-            'hoTen'   => 'sometimes|string|max:100',
-            'email'   => 'sometimes|email|unique:giangvien,email,'.$gv->maGV.',maGV',
-            'matKhau' => 'nullable|min:6',
-            'soDienThoai' => 'nullable|string|max:20',
-            'hocVi'   => 'nullable|string|max:50'
-        ]);
-        if (!empty($data['matKhau'])) $data['matKhau'] = Hash::make($data['matKhau']);
-        $gv->update($data);
+        $gv = GiangVien::findOrFail($id);
+        if ($request->has('matKhau')) {
+            $request['matKhau'] = Hash::make($request['matKhau']);
+        }
+        $gv->update($request->all());
         return response()->json($gv);
+    }
+
+    public function destroy($id)
+    {
+        GiangVien::destroy($id);
+        return response()->json(['message' => 'Xóa giảng viên thành công']);
     }
 }

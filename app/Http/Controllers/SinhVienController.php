@@ -6,46 +6,47 @@ use App\Models\SinhVien;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class SinhVienController extends BaseCrudController
+class SinhVienController extends Controller
 {
-    protected $model = SinhVien::class;
-    protected $searchable = ['hoTen','email','maSo','maLopHanhChinh'];
-    protected $rulesCreate = [
-        'maNganh' => 'required|exists:nganh,maNganh',
-        'maLopHanhChinh' => 'nullable|string|max:20',
-        'maSo'    => 'required|string|max:20|unique:sinhvien,maSo',
-        'hoTen'   => 'required|string|max:100',
-        'email'   => 'required|email|unique:sinhvien,email',
-        'matKhau' => 'required|min:6',
-        'soDienThoai'=>'nullable|string|max:20',
-        'khoaHoc' => 'nullable|integer',
-        'anhDaiDien'=> 'nullable|string|max:255',
-    ];
+    public function index()
+    {
+        return SinhVien::with('nganh')->get();
+    }
 
     public function store(Request $request)
     {
-        $data = $request->validate($this->rulesCreate);
+        $data = $request->validate([
+            'maSo' => 'required|string|unique:sinhvien,maSo',
+            'hoTen' => 'required|string|max:100',
+            'email' => 'required|email|unique:sinhvien,email',
+            'matKhau' => 'required|string|min:6',
+            'maNganh' => 'required|exists:nganh,maNganh',
+            'soDienThoai' => 'nullable|string|max:15',
+        ]);
+
         $data['matKhau'] = Hash::make($data['matKhau']);
-        $sv = SinhVien::create($data);
-        return response()->json($sv, 201);
+        $sinhVien = SinhVien::create($data);
+        return response()->json($sinhVien, 201);
+    }
+
+    public function show($id)
+    {
+        return SinhVien::with('nganh')->findOrFail($id);
     }
 
     public function update(Request $request, $id)
     {
-        $sv   = SinhVien::findOrFail($id);
-        $data = $request->validate([
-            'maNganh' => 'sometimes|exists:nganh,maNganh',
-            'maLopHanhChinh' => 'nullable|string|max:20',
-            'maSo'    => 'sometimes|string|max:20|unique:sinhvien,maSo,'.$sv->maSV.',maSV',
-            'hoTen'   => 'sometimes|string|max:100',
-            'email'   => 'sometimes|email|unique:sinhvien,email,'.$sv->maSV.',maSV',
-            'matKhau' => 'nullable|min:6',
-            'soDienThoai'=>'nullable|string|max:20',
-            'khoaHoc' => 'nullable|integer',
-            'anhDaiDien'=> 'nullable|string|max:255',
-        ]);
-        if (!empty($data['matKhau'])) $data['matKhau'] = Hash::make($data['matKhau']);
-        $sv->update($data);
+        $sv = SinhVien::findOrFail($id);
+        if ($request->has('matKhau')) {
+            $request['matKhau'] = Hash::make($request['matKhau']);
+        }
+        $sv->update($request->all());
         return response()->json($sv);
+    }
+
+    public function destroy($id)
+    {
+        SinhVien::destroy($id);
+        return response()->json(['message' => 'Xóa sinh viên thành công']);
     }
 }

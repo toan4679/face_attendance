@@ -5,24 +5,43 @@ namespace App\Http\Controllers;
 use App\Models\LopHocPhan;
 use Illuminate\Http\Request;
 
-class LopHocPhanController extends BaseCrudController
+class LopHocPhanController extends Controller
 {
-    protected $model = LopHocPhan::class;
-    protected $searchable = ['maSoLopHP','hocKy','namHoc'];
-    protected $rulesCreate = [
-        'maMon'      => 'required|exists:monhoc,maMon',
-        'maGV'       => 'required|exists:giangvien,maGV',
-        'maSoLopHP'  => 'required|string|max:50|unique:lophocphan,maSoLopHP',
-        'hocKy'      => 'required|string|max:20',
-        'namHoc'     => 'required|string|max:20',
-        'thongTinLichHoc' => 'nullable|string'
-    ];
-
-    public function byGiangVien(Request $request)
+    public function index()
     {
-        $gv = $request->user();
-        return response()->json(
-            LopHocPhan::where('maGV', $gv->maGV)->paginate(min((int)$request->per_page?:20, 100))
-        );
+        return LopHocPhan::with(['monhoc', 'giangvien'])->get();
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'maMon' => 'required|exists:monhoc,maMon',
+            'maGV' => 'required|exists:giangvien,maGV',
+            'maSoLopHP' => 'required|string|max:20|unique:lophocphan,maSoLopHP',
+            'hocKy' => 'required|string',
+            'namHoc' => 'required|string',
+            'thongTinLichHoc' => 'nullable|string',
+        ]);
+
+        $lop = LopHocPhan::create($data);
+        return response()->json($lop, 201);
+    }
+
+    public function show($id)
+    {
+        return LopHocPhan::with(['monhoc', 'giangvien'])->findOrFail($id);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $lop = LopHocPhan::findOrFail($id);
+        $lop->update($request->all());
+        return response()->json($lop);
+    }
+
+    public function destroy($id)
+    {
+        LopHocPhan::destroy($id);
+        return response()->json(['message' => 'Xóa lớp học phần thành công']);
     }
 }

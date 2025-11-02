@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 
 class LichDayController extends Controller
 {
-    /** ✅ Lấy lịch dạy của giảng viên đang đăng nhập */
     public function index(Request $request)
     {
         $user = $request->user();
