@@ -9,12 +9,12 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        $user = $request->user(); // Sanctum tokenable (polymorphic)
+        $user = $request->user();
+
         if (!$user) {
-            return response()->json(['error' => ['code'=>'UNAUTHORIZED','message'=>'Chưa đăng nhập']], 401);
+            return response()->json(['error' => ['code' => 'UNAUTHORIZED', 'message' => 'Chưa đăng nhập']], 401);
         }
 
-        // map instance -> role name
         $map = [
             \App\Models\Admin::class       => 'admin',
             \App\Models\PhongDaoTao::class => 'pdt',
@@ -25,8 +25,9 @@ class RoleMiddleware
         $role = $map[get_class($user)] ?? null;
 
         if (!$role || !in_array($role, $roles, true)) {
-            return response()->json(['error'=>['code'=>'FORBIDDEN','message'=>'Không đủ quyền']], 403);
+            return response()->json(['error' => ['code' => 'FORBIDDEN', 'message' => 'Không đủ quyền']], 403);
         }
+
         return $next($request);
     }
 }
