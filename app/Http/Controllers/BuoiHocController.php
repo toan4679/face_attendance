@@ -12,7 +12,7 @@ class BuoiHocController extends Controller
     {
         $limit = $request->query('limit'); // vd: /api/v1/pdt/buoihoc?limit=5
 
-        $query = BuoiHoc::with(['giangvien', 'lophocphan'])
+        $query = BuoiHoc::with(['giangvien', 'lophocphan.monHoc'])
             ->orderBy('ngayHoc', 'desc')
             ->orderBy('gioBatDau', 'desc');
 
@@ -43,8 +43,7 @@ class BuoiHocController extends Controller
     // ✅ Xem chi tiết 1 buổi học
     public function show($id)
     {
-        return BuoiHoc::with(['giangvien', 'lophocphan.monhoc'])->get();
-
+        return BuoiHoc::with(['giangvien', 'lophocphan.monHoc'])->findOrFail($id);
     }
 
     // ✅ Cập nhật
