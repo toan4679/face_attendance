@@ -43,7 +43,8 @@ class BuoiHocController extends Controller
     // ✅ Xem chi tiết 1 buổi học
     public function show($id)
     {
-        return BuoiHoc::with(['giangvien', 'lophocphan'])->findOrFail($id);
+        return BuoiHoc::with(['giangvien', 'lophocphan.monhoc'])->get();
+
     }
 
     // ✅ Cập nhật
