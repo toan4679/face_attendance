@@ -14,7 +14,14 @@ class LopHocPhan extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'maMon', 'maGV', 'maSoLopHP', 'hocKy', 'namHoc', 'thongTinLichHoc'
+        'maMon',
+        'maGV',
+        'maSoLopHP',
+        'hocKy',
+        'namHoc',
+        'ngayBatDau',   
+        'ngayKetThuc',   
+        'thongTinLichHoc',
     ];
 
     public function monHoc()

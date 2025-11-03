@@ -2,40 +2,56 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LopHocPhan;
 use Illuminate\Http\Request;
+use App\Models\LopHocPhan;
 
 class LopHocPhanController extends Controller
 {
     public function index()
     {
-        return LopHocPhan::with(['monhoc', 'giangvien'])->get();
+        $data = LopHocPhan::with(['monHoc', 'giangVien'])->get();
+        return response()->json($data);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'maMon' => 'required|exists:monhoc,maMon',
-            'maGV' => 'required|exists:giangvien,maGV',
-            'maSoLopHP' => 'required|string|max:20|unique:lophocphan,maSoLopHP',
-            'hocKy' => 'required|string',
-            'namHoc' => 'required|string',
-            'thongTinLichHoc' => 'nullable|string',
+            'maGV' => 'nullable|exists:giangvien,maGV',
+            'maSoLopHP' => 'required|string|max:50',
+            'hocKy' => 'required|string|max:20',
+            'namHoc' => 'required|string|max:20',
+            'ngayBatDau' => 'required|date',     // ✅ thêm
+            'ngayKetThuc' => 'required|date|after_or_equal:ngayBatDau', // ✅ thêm
+            'thongTinLichHoc' => 'nullable|string|max:255',
         ]);
 
         $lop = LopHocPhan::create($data);
         return response()->json($lop, 201);
     }
 
-    public function show($id)
-    {
-        return LopHocPhan::with(['monhoc', 'giangvien'])->findOrFail($id);
-    }
-
     public function update(Request $request, $id)
     {
         $lop = LopHocPhan::findOrFail($id);
-        $lop->update($request->all());
+
+        $data = $request->validate([
+            'maMon' => 'sometimes|exists:monhoc,maMon',
+            'maGV' => 'nullable|exists:giangvien,maGV',
+            'maSoLopHP' => 'sometimes|string|max:50',
+            'hocKy' => 'sometimes|string|max:20',
+            'namHoc' => 'sometimes|string|max:20',
+            'ngayBatDau' => 'nullable|date',
+            'ngayKetThuc' => 'nullable|date|after_or_equal:ngayBatDau',
+            'thongTinLichHoc' => 'nullable|string|max:255',
+        ]);
+
+        $lop->update($data);
+        return response()->json($lop);
+    }
+
+    public function show($id)
+    {
+        $lop = LopHocPhan::with(['monHoc', 'giangVien', 'buoiHoc'])->findOrFail($id);
         return response()->json($lop);
     }
 
