@@ -4,49 +4,60 @@ namespace App\Http\Controllers;
 
 use App\Models\GiangVien;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class GiangVienController extends Controller
 {
     public function index()
     {
-        return GiangVien::with('bomon')->get();
+        $data = GiangVien::all();
+        return response()->json(['data' => $data]);
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $validated = $request->validate([
             'hoTen' => 'required|string|max:100',
             'email' => 'required|email|unique:giangvien,email',
             'matKhau' => 'required|string|min:6',
-            'maBoMon' => 'nullable|exists:bomon,maBoMon',
+            'maBoMon' => 'nullable|integer',
+            'soDienThoai' => 'nullable|string|max:20',
             'hocVi' => 'nullable|string|max:50',
-            'soDienThoai' => 'nullable|string|max:15',
         ]);
 
-        $data['matKhau'] = Hash::make($data['matKhau']);
-        $gv = GiangVien::create($data);
-        return response()->json($gv, 201);
+        $validated['matKhau'] = bcrypt($validated['matKhau']);
+        $giangVien = GiangVien::create($validated);
+
+        return response()->json(['message' => 'Thêm giảng viên thành công', 'data' => $giangVien]);
     }
 
     public function show($id)
     {
-        return GiangVien::with('bomon')->findOrFail($id);
+        $gv = GiangVien::find($id);
+        if (!$gv) {
+            return response()->json(['error' => 'Không tìm thấy giảng viên'], 404);
+        }
+        return response()->json(['data' => $gv]);
     }
 
     public function update(Request $request, $id)
     {
-        $gv = GiangVien::findOrFail($id);
-        if ($request->has('matKhau')) {
-            $request['matKhau'] = Hash::make($request['matKhau']);
+        $gv = GiangVien::find($id);
+        if (!$gv) {
+            return response()->json(['error' => 'Không tìm thấy giảng viên'], 404);
         }
+
         $gv->update($request->all());
-        return response()->json($gv);
+        return response()->json(['message' => 'Cập nhật thành công', 'data' => $gv]);
     }
 
     public function destroy($id)
     {
-        GiangVien::destroy($id);
-        return response()->json(['message' => 'Xóa giảng viên thành công']);
+        $gv = GiangVien::find($id);
+        if (!$gv) {
+            return response()->json(['error' => 'Không tìm thấy giảng viên'], 404);
+        }
+
+        $gv->delete();
+        return response()->json(['message' => 'Xóa thành công']);
     }
 }

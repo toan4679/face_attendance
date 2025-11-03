@@ -2,63 +2,104 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+use App\Models\MonHoc;
 use App\Models\GiangVien;
 use App\Models\SinhVien;
-use App\Models\MonHoc;
 use App\Models\LopHocPhan;
 use App\Models\BuoiHoc;
-use App\Models\KhuonMat;
-use Illuminate\Http\Request;
+use App\Helpers\RoleHelper;
 
 class PDTController extends Controller
 {
-    /** Thống kê tổng quan cho dashboard */
-    public function getDashboardStats()
+    public function dashboard(Request $request)
     {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Chưa đăng nhập'], 401);
+        }
+
+        $role = RoleHelper::getRole($user);
+        if ($role !== 'pdt') {
+            return response()->json(['error' => 'Không có quyền truy cập'], 403);
+        }
+
         return response()->json([
             'tongMonHoc' => MonHoc::count(),
-            'tongLopHocPhan' => LopHocPhan::count(),
             'tongGiangVien' => GiangVien::count(),
             'tongSinhVien' => SinhVien::count(),
+            'tongLopHocPhan' => LopHocPhan::count(),
         ]);
     }
 
-    /** Lấy toàn bộ sinh viên */
-    public function getAllStudents()
+
+    public function listMonHoc()
     {
-        return SinhVien::select('maSV', 'hoTen', 'email', 'maNganh')->get();
+        return response()->json(MonHoc::all());
     }
 
-    /** Lấy dữ liệu khuôn mặt sinh viên */
-    public function getStudentFaces($id)
-    {
-        return KhuonMat::where('maSV', $id)->get(['maKhuonMat', 'duongDanAnh', 'created_at']);
-    }
-
-    /** Gán lịch dạy cho giảng viên */
-    public function assignSchedule(Request $request)
+    public function createMonHoc(Request $request)
     {
         $data = $request->validate([
+            'tenMonHoc' => 'required|string|max:100',
+            'soTinChi' => 'required|integer',
+        ]);
+        $mon = MonHoc::create($data);
+        return response()->json($mon, 201);
+    }
+
+    public function assignSchedule(Request $request)
+    {
+        try {
+            $data = $request->validate([
+                'maGV' => 'required|exists:giangvien,maGV',
+                'maLopHP' => 'required|exists:lophocphan,maLopHP',
+                'ngayHoc' => 'required|date',
+                'gioBatDau' => 'required',
+                'gioKetThuc' => 'required',
+                'phongHoc' => 'required|string|max:50',
+            ]);
+
+            // Cập nhật giảng viên cho lớp học phần
+            $lop = \App\Models\LopHocPhan::findOrFail($data['maLopHP']);
+            $lop->maGV = $data['maGV'];
+            $lop->save();
+
+            // Tạo buổi học mới tương ứng
+            $buoi = \App\Models\BuoiHoc::create([
+                'maLopHP' => $data['maLopHP'],
+                'maGV' => $data['maGV'],
+                'ngayHoc' => $data['ngayHoc'],
+                'gioBatDau' => $data['gioBatDau'],
+                'gioKetThuc' => $data['gioKetThuc'],
+                'phongHoc' => $data['phongHoc'],
+                'maQR' => 'QR-' . uniqid(),
+            ]);
+
+            return response()->json([
+                'message' => 'Gán lịch dạy thành công',
+                'buoiHoc' => $buoi
+            ], 201);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'Lỗi server: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function createBuoiHoc(Request $request)
+    {
+        $data = $request->validate([
+            'maLopHP' => 'required|exists:lophocphan,maLopHP',
             'maGV' => 'required|exists:giangvien,maGV',
-            'maMon' => 'required|exists:monhoc,maMon',
-            'hocKy' => 'required|string',
-            'namHoc' => 'required|string',
-            'maSoLopHP' => 'required|string',
-            'thongTinLichHoc' => 'nullable|string',
+            'ngayHoc' => 'required|date',
+            'gioBatDau' => 'required',
+            'gioKetThuc' => 'required',
+            'phongHoc' => 'required|string',
         ]);
-
-        $lop = LopHocPhan::create([
-            'maMon' => $data['maMon'],
-            'maGV' => $data['maGV'],
-            'maSoLopHP' => $data['maSoLopHP'],
-            'hocKy' => $data['hocKy'],
-            'namHoc' => $data['namHoc'],
-            'thongTinLichHoc' => $data['thongTinLichHoc'] ?? '',
-        ]);
-
-        return response()->json([
-            'message' => 'Gán lịch dạy thành công',
-            'lopHocPhan' => $lop,
-        ], 201);
+        $data['maQR'] = 'QR-' . uniqid();
+        $buoi = BuoiHoc::create($data);
+        return response()->json($buoi, 201);
     }
 }

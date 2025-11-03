@@ -9,7 +9,7 @@ use App\Models\DangKyHoc;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\DB;
 
-class CheckInController extends Controller
+class DiemDanhController extends Controller
 {
     public function listByBuoi($maBuoi)
     {
