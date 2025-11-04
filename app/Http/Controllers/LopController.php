@@ -84,24 +84,32 @@ class LopController extends Controller
     }
 
     public function importSinhVienExcel(Request $request, $maLop)
-{
-    // ✅ Debug: kiểm tra Laravel có nhận được file không
-    if (!$request->hasFile('file')) {
+    {
+
         return response()->json([
-            'message' => 'Không có file được gửi lên.',
-            'keys' => $request->all(),
-            'files' => $request->files->keys()
-        ], 400);
+            'method' => $request->method(),
+            'contentType' => $request->header('Content-Type'),
+            'hasFile' => $request->hasFile('file'),
+            'files' => $request->files->keys(),
+            'allKeys' => $request->all(),
+        ]);
+        
+        // ✅ Debug: kiểm tra Laravel có nhận được file không
+        if (!$request->hasFile('file')) {
+            return response()->json([
+                'message' => 'Không có file được gửi lên.',
+                'keys' => $request->all(),
+                'files' => $request->files->keys()
+            ], 400);
+        }
+
+        $file = $request->file('file');
+
+        return response()->json([
+            'message' => '✅ File nhận được thành công!',
+            'original_name' => $file->getClientOriginalName(),
+            'mime' => $file->getMimeType(),
+            'size' => $file->getSize(),
+        ]);
     }
-
-    $file = $request->file('file');
-
-    return response()->json([
-        'message' => '✅ File nhận được thành công!',
-        'original_name' => $file->getClientOriginalName(),
-        'mime' => $file->getMimeType(),
-        'size' => $file->getSize(),
-    ]);
-}
-
 }
