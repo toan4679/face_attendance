@@ -24,7 +24,8 @@ class Lop extends Model
     // ✅ Quan hệ 1-nhiều tới SinhVien
     public function sinhviens()
     {
-        return $this->hasMany(SinhVien::class, 'maLop', 'maLop');
+        // Cột khóa ngoại thực tế trong bảng sinhvien là maLopHanhChinh
+        return $this->hasMany(SinhVien::class, 'maLopHanhChinh', 'maSoLop');
     }
 
     // ✅ Quan hệ ngược lại tới Nganh (nếu có)
