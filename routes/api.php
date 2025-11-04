@@ -82,7 +82,6 @@ Route::prefix('v1')->group(function () {
 
         // CRUD quản lý danh mục
         Route::apiResource('khoa', KhoaController::class);
-        Route::apiResource('bomon', BoMonController::class);
         Route::apiResource('nganh', NganhController::class);
         Route::apiResource('monhoc', MonHocController::class);
 

@@ -19,7 +19,6 @@ class GiangVienController extends Controller
             'hoTen' => 'required|string|max:100',
             'email' => 'required|email|unique:giangvien,email',
             'matKhau' => 'required|string|min:6',
-            'maBoMon' => 'nullable|integer',
             'soDienThoai' => 'nullable|string|max:20',
             'hocVi' => 'nullable|string|max:50',
         ]);

@@ -15,10 +15,6 @@ class Nganh extends Model
 
     protected $fillable = ['maBoMon', 'tenNganh', 'maSo'];
 
-    public function boMon()
-    {
-        return $this->belongsTo(BoMon::class, 'maBoMon', 'maBoMon');
-    }
 
     public function monHoc()
     {

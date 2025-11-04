@@ -18,17 +18,13 @@ class GiangVien extends Authenticatable
         'hoTen',
         'email',
         'matKhau',
-        'maBoMon',
         'hocVi',
         'soDienThoai',
     ];
 
     protected $hidden = ['matKhau'];
 
-    public function boMon()
-    {
-        return $this->belongsTo(BoMon::class, 'maBoMon', 'maBoMon');
-    }
+   
 
     public function lopHocPhan()
     {
