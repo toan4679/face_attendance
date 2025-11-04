@@ -84,23 +84,24 @@ class LopController extends Controller
     }
 
     public function importSinhVienExcel(Request $request, $maLop)
-    {
-        if (!$request->hasFile('file')) {
-            return response()->json(['message' => 'Không có file được gửi lên.'], 400);
-        }
-
-        $file = $request->file('file');
-        $lop = Lop::find($maLop);
-
-        if (!$lop) {
-            return response()->json(['message' => 'Không tìm thấy lớp học.'], 404);
-        }
-
-        try {
-            Excel::import(new SinhVienImport($maLop), $file);
-            return response()->json(['message' => 'Import sinh viên thành công.']);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Lỗi khi import: ' . $e->getMessage()], 500);
-        }
+{
+    // ✅ Debug: kiểm tra Laravel có nhận được file không
+    if (!$request->hasFile('file')) {
+        return response()->json([
+            'message' => 'Không có file được gửi lên.',
+            'keys' => $request->all(),
+            'files' => $request->files->keys()
+        ], 400);
     }
+
+    $file = $request->file('file');
+
+    return response()->json([
+        'message' => '✅ File nhận được thành công!',
+        'original_name' => $file->getClientOriginalName(),
+        'mime' => $file->getMimeType(),
+        'size' => $file->getSize(),
+    ]);
+}
+
 }
