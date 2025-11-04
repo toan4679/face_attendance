@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Lop;
+use App\Models\Nganh;
+use Illuminate\Http\Request;
+
+class LopController extends Controller
+{
+    public function index()
+    {
+        $lop = Lop::with('nganh')->get()->map(function ($item) {
+            return [
+                'maLop' => $item->maLop,
+                'maSoLop' => $item->maSoLop,
+                'tenLop' => $item->tenLop,
+                'maNganh' => $item->maNganh,
+                'tenNganh' => $item->nganh->tenNganh ?? '',
+                'khoaHoc' => $item->khoaHoc,
+                'coVan' => $item->coVan,
+            ];
+        });
+        return response()->json($lop);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'maSoLop' => 'required|string|unique:lop,maSoLop',
+            'tenLop' => 'required|string',
+            'maNganh' => 'required|exists:nganh,maNganh',
+            'khoaHoc' => 'required|string',
+            'coVan' => 'nullable|string',
+        ]);
+
+        $lop = Lop::create($data);
+        return response()->json(['message' => 'Tạo lớp thành công', 'lop' => $lop], 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $lop = Lop::findOrFail($id);
+        $data = $request->validate([
+            'maSoLop' => 'required|string|unique:lop,maSoLop,' . $id . ',maLop',
+            'tenLop' => 'required|string',
+            'maNganh' => 'required|exists:nganh,maNganh',
+            'khoaHoc' => 'required|string',
+            'coVan' => 'nullable|string',
+        ]);
+
+        $lop->update($data);
+        return response()->json(['message' => 'Cập nhật lớp thành công']);
+    }
+
+    public function destroy($id)
+    {
+        $lop = Lop::findOrFail($id);
+        $lop->delete();
+        return response()->json(['message' => 'Xóa lớp thành công']);
+    }
+}

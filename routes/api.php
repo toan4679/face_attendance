@@ -15,7 +15,7 @@ use App\Http\Controllers\BuoiHocController;
 use App\Http\Controllers\KhuonMatController;
 use App\Http\Controllers\ThongBaoController;
 use App\Http\Controllers\QRController;
-use App\Http\Controllers\CheckInController;
+use App\Http\Controllers\LopController;
 use App\Http\Controllers\DiemDanhController;
 use App\Http\Controllers\LichDayController;
 use App\Http\Controllers\LichHocController;
@@ -89,6 +89,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('giangvien', GiangVienController::class);
         Route::apiResource('sinhvien', SinhVienController::class);
         Route::apiResource('lophocphan', LopHocPhanController::class);
+        Route::apiResource('lop', LopController::class);
 
         // CRUD buổi học
         Route::apiResource('buoihoc', BuoiHocController::class)
