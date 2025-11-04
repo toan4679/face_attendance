@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lop;
-use App\Models\Nganh;
+use App\Models\SinhVien;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\SinhVienImport;
 
 class LopController extends Controller
 {
@@ -58,5 +60,47 @@ class LopController extends Controller
         $lop = Lop::findOrFail($id);
         $lop->delete();
         return response()->json(['message' => 'Xóa lớp thành công']);
+    }
+
+    public function getSinhVienByLop($maLop)
+    {
+        $lop = Lop::with('sinhviens')->find($maLop);
+
+        if (!$lop) {
+            return response()->json(['message' => 'Không tìm thấy lớp học.'], 404);
+        }
+
+        return response()->json(
+            $lop->sinhviens->map(function ($sv) {
+                return [
+                    'maSV' => $sv->maSV,
+                    'hoTen' => $sv->hoTen,
+                    'email' => $sv->email,
+                    'gioiTinh' => $sv->gioiTinh,
+                    'khoaHoc' => $sv->khoaHoc,
+                ];
+            })
+        );
+    }
+
+    public function importSinhVienExcel(Request $request, $maLop)
+    {
+        if (!$request->hasFile('file')) {
+            return response()->json(['message' => 'Không có file được gửi lên.'], 400);
+        }
+
+        $file = $request->file('file');
+        $lop = Lop::find($maLop);
+
+        if (!$lop) {
+            return response()->json(['message' => 'Không tìm thấy lớp học.'], 404);
+        }
+
+        try {
+            Excel::import(new SinhVienImport($maLop), $file);
+            return response()->json(['message' => 'Import sinh viên thành công.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Lỗi khi import: ' . $e->getMessage()], 500);
+        }
     }
 }

@@ -91,6 +91,13 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('lophocphan', LopHocPhanController::class);
         Route::apiResource('lop', LopController::class);
 
+        // 🔍 Danh sách sinh viên theo lớp
+        Route::get('/lop/{maLop}/sinhvien', [LopController::class, 'getSinhVienByLop']);
+
+        // 📥 Import sinh viên từ Excel
+        Route::post('/lop/{maLop}/import-sinhvien', [LopController::class, 'importSinhVienExcel']);
+
+
         // CRUD buổi học
         Route::apiResource('buoihoc', BuoiHocController::class)
             ->only(['index', 'store', 'show', 'update', 'destroy']);
