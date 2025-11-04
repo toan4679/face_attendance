@@ -64,23 +64,15 @@ class LopController extends Controller
 
     public function getSinhVienByLop($maLop)
     {
-        $lop = Lop::with('sinhviens')->find($maLop);
-
-        if (!$lop) {
-            return response()->json(['message' => 'Không tìm thấy lớp học.'], 404);
+        try {
+            $sinhvien = \App\Models\SinhVien::where('maLop', $maLop)->get();
+            return response()->json($sinhvien);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => '❌ Lỗi khi lấy danh sách sinh viên.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json(
-            $lop->sinhviens->map(function ($sv) {
-                return [
-                    'maSV' => $sv->maSV,
-                    'hoTen' => $sv->hoTen,
-                    'email' => $sv->email,
-                    'gioiTinh' => $sv->gioiTinh,
-                    'khoaHoc' => $sv->khoaHoc,
-                ];
-            })
-        );
     }
 
     public function importSinhVienExcel(Request $request, $maLop)
