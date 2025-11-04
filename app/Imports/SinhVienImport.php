@@ -18,11 +18,9 @@ class SinhVienImport implements ToModel, WithHeadingRow
     public function model(array $row)
     {
         return new SinhVien([
-            'maSV' => $row['ma_sv'] ?? null,
+            'maSo' => $row['ma_so'] ?? null, 
             'hoTen' => $row['ho_ten'] ?? null,
             'email' => $row['email'] ?? null,
-            'gioiTinh' => $row['gioi_tinh'] ?? null,
-            'ngaySinh' => $row['ngay_sinh'] ?? null,
             'maLop' => $this->maLop,
         ]);
     }
