@@ -3,7 +3,6 @@
 namespace App\Imports;
 
 use App\Models\SinhVien;
-use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
@@ -18,15 +17,13 @@ class SinhVienImport implements ToModel, WithHeadingRow
 
     public function model(array $row)
     {
-        // ⚙️ Các cột trong file Excel cần khớp tên header: ma_sv, ho_ten, email, gioi_tinh, khoa_hoc
         return new SinhVien([
-            'maSV' => $row['ma_sv'],
-            'hoTen' => $row['ho_ten'],
-            'email' => $row['email'],
-            'gioiTinh' => $row['gioi_tinh'],
-            'khoaHoc' => $row['khoa_hoc'],
+            'maSV' => $row['ma_sv'] ?? null,
+            'hoTen' => $row['ho_ten'] ?? null,
+            'email' => $row['email'] ?? null,
+            'gioiTinh' => $row['gioi_tinh'] ?? null,
+            'ngaySinh' => $row['ngay_sinh'] ?? null,
             'maLop' => $this->maLop,
-            'password' => Hash::make('123456'), // đặt mật khẩu mặc định
         ]);
     }
 }

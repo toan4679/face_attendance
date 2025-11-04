@@ -85,31 +85,32 @@ class LopController extends Controller
 
     public function importSinhVienExcel(Request $request, $maLop)
     {
-
-        return response()->json([
-            'method' => $request->method(),
-            'contentType' => $request->header('Content-Type'),
-            'hasFile' => $request->hasFile('file'),
-            'files' => $request->files->keys(),
-            'allKeys' => $request->all(),
-        ]);
-        
-        // ✅ Debug: kiểm tra Laravel có nhận được file không
+        // Kiểm tra có file không
         if (!$request->hasFile('file')) {
-            return response()->json([
-                'message' => 'Không có file được gửi lên.',
-                'keys' => $request->all(),
-                'files' => $request->files->keys()
-            ], 400);
+            return response()->json(['message' => 'Không có file được gửi lên.'], 400);
         }
 
         $file = $request->file('file');
 
-        return response()->json([
-            'message' => '✅ File nhận được thành công!',
-            'original_name' => $file->getClientOriginalName(),
-            'mime' => $file->getMimeType(),
-            'size' => $file->getSize(),
-        ]);
+        // Kiểm tra định dạng hợp lệ
+        $ext = strtolower($file->getClientOriginalExtension());
+        if (!in_array($ext, ['xls', 'xlsx'])) {
+            return response()->json(['message' => 'Chỉ chấp nhận file Excel (.xls, .xlsx).'], 400);
+        }
+
+        try {
+            // Import dữ liệu sinh viên
+            Excel::import(new SinhVienImport($maLop), $file);
+
+            return response()->json([
+                'message' => '✅ Import sinh viên thành công!',
+                'file_name' => $file->getClientOriginalName(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => '❌ Lỗi khi import file.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
