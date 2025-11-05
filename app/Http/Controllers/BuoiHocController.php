@@ -29,7 +29,7 @@ class BuoiHocController extends Controller
     {
         $data = $request->validate([
             'maLopHP'     => 'required|exists:lophocphan,maLopHP',
-            'maGV'        => 'required|exists:giangvien,maGV',
+            'maGV'        => 'nullable|exists:giangvien,maGV',
             'thu'         => 'required|string|max:20', // Thứ trong tuần
             'tietBatDau'  => 'required|integer|min:1|max:12',
             'tietKetThuc' => 'required|integer|gte:tietBatDau|max:12',
