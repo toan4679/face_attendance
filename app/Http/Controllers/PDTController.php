@@ -9,6 +9,7 @@ use App\Models\SinhVien;
 use App\Models\LopHocPhan;
 use App\Models\BuoiHoc;
 use App\Helpers\RoleHelper;
+use Illuminate\Support\Facades\Log; 
 
 class PDTController extends Controller
 {
@@ -54,38 +55,33 @@ class PDTController extends Controller
             $data = $request->validate([
                 'maGV' => 'required|exists:giangvien,maGV',
                 'maLopHP' => 'required|exists:lophocphan,maLopHP',
-                'ngayHoc' => 'required|date',
-                'gioBatDau' => 'required',
-                'gioKetThuc' => 'required',
-                'phongHoc' => 'required|string|max:50',
+                'thu' => 'required|string|max:20',
+                'tietBatDau' => 'required|integer|min:1',
+                'tietKetThuc' => 'required|integer|min:1|gte:tietBatDau',
+                'phongHoc' => 'nullable|string|max:50',
             ]);
 
-            // Cập nhật giảng viên cho lớp học phần
-            $lop = \App\Models\LopHocPhan::findOrFail($data['maLopHP']);
-            $lop->maGV = $data['maGV'];
-            $lop->save();
-
-            // Tạo buổi học mới tương ứng
             $buoi = \App\Models\BuoiHoc::create([
-                'maLopHP' => $data['maLopHP'],
                 'maGV' => $data['maGV'],
-                'ngayHoc' => $data['ngayHoc'],
-                'gioBatDau' => $data['gioBatDau'],
-                'gioKetThuc' => $data['gioKetThuc'],
-                'phongHoc' => $data['phongHoc'],
-                'maQR' => 'QR-' . uniqid(),
+                'maLopHP' => $data['maLopHP'],
+                'thu' => $data['thu'],
+                'tietBatDau' => $data['tietBatDau'],
+                'tietKetThuc' => $data['tietKetThuc'],
+                'phongHoc' => $data['phongHoc'] ?? null,
             ]);
 
             return response()->json([
                 'message' => 'Gán lịch dạy thành công',
-                'buoiHoc' => $buoi
+                'data' => $buoi
             ], 201);
-        } catch (\Throwable $e) {
+        } catch (\Throwable $th) {
+            Log::error('Lỗi gán lịch dạy: ' . $th->getMessage());
             return response()->json([
-                'error' => 'Lỗi server: ' . $e->getMessage(),
+                'error' => 'Lỗi server: ' . $th->getMessage()
             ], 500);
         }
     }
+
 
 
     public function createBuoiHoc(Request $request)
