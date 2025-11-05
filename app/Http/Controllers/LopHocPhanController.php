@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\LopHocPhan;
+use Illuminate\Support\Facades\Log;
 
 class LopHocPhanController extends Controller
 {
@@ -15,20 +16,29 @@ class LopHocPhanController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'maMon' => 'required|exists:monhoc,maMon',
-            'maGV' => 'nullable|exists:giangvien,maGV',
-            'maSoLopHP' => 'required|string|max:50',
-            'hocKy' => 'required|string|max:20',
-            'namHoc' => 'required|string|max:20',
-            'ngayBatDau' => 'required|date',     // ✅ thêm
-            'ngayKetThuc' => 'required|date|after_or_equal:ngayBatDau', // ✅ thêm
-            'thongTinLichHoc' => 'nullable|string|max:255',
-        ]);
+        try {
+            $data = $request->validate([
+                'maMon' => 'required|exists:monhoc,maMon',
+                'maGV' => 'nullable|exists:giangvien,maGV',
+                'maSoLopHP' => 'required|string|max:50',
+                'hocKy' => 'required|string|max:20',
+                'namHoc' => 'required|string|max:20',
+                'ngayBatDau' => 'required|date',
+                'ngayKetThuc' => 'required|date|after_or_equal:ngayBatDau',
+                'thongTinLichHoc' => 'nullable|string|max:255',
+            ]);
 
-        $lop = LopHocPhan::create($data);
-        return response()->json($lop, 201);
+            $lop = LopHocPhan::create($data);
+            return response()->json($lop, 201);
+        } catch (\Exception $e) {
+            Log::error('❌ Lỗi thêm lớp học phần: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Đã xảy ra lỗi khi thêm lớp học phần',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
 
     public function update(Request $request, $id)
     {
