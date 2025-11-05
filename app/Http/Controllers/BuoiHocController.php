@@ -67,46 +67,51 @@ class BuoiHocController extends Controller
     }
 
     // 🔹 Cập nhật
-    public function update(Request $request, $id)
-    {
-        $buoi = BuoiHoc::findOrFail($id);
+    // 🔹 Cập nhật
+public function update(Request $request, $id)
+{
+    $buoi = BuoiHoc::findOrFail($id);
 
-        $data = $request->validate([
-            'thu'         => 'sometimes|string|max:20',
-            'tietBatDau'  => 'sometimes|integer|min:1|max:12',
-            'tietKetThuc' => 'sometimes|integer|gte:tietBatDau|max:12',
-            'phongHoc'    => 'nullable|string|max:50',
-            'maGV'        => 'sometimes|exists:giangvien,maGV',
-            'maQR'        => 'nullable|string|max:255',
-        ]);
+    $data = $request->validate([
+        'thu'         => 'sometimes|string|max:20',
+        'tietBatDau'  => 'sometimes|integer|min:1|max:12',
+        'tietKetThuc' => 'sometimes|integer|gte:tietBatDau|max:12',
+        'phongHoc'    => 'nullable|string|max:50',
 
-        // ✅ kiểm tra trùng lịch (nếu thay đổi thứ hoặc tiết)
-        if (isset($data['thu']) || isset($data['tietBatDau']) || isset($data['tietKetThuc'])) {
-            $check = BuoiHoc::where('maLopHP', $buoi->maLopHP)
-                ->where('thu', $data['thu'] ?? $buoi->thu)
-                ->where('maBuoi', '!=', $buoi->maBuoi)
-                ->where(function ($q) use ($data, $buoi) {
-                    $start = $data['tietBatDau'] ?? $buoi->tietBatDau;
-                    $end   = $data['tietKetThuc'] ?? $buoi->tietKetThuc;
-                    $q->whereBetween('tietBatDau', [$start, $end])
-                      ->orWhereBetween('tietKetThuc', [$start, $end]);
-                })
-                ->exists();
+        // ✅ cho phép null hợp lệ
+        'maGV'        => 'nullable|exists:giangvien,maGV',
 
-            if ($check) {
-                throw ValidationException::withMessages([
-                    'tietBatDau' => 'Khung tiết bị trùng với buổi học khác.',
-                ]);
-            }
+        'maQR'        => 'nullable|string|max:255',
+    ]);
+
+    // ✅ kiểm tra trùng lịch (nếu thay đổi thứ hoặc tiết)
+    if (isset($data['thu']) || isset($data['tietBatDau']) || isset($data['tietKetThuc'])) {
+        $check = BuoiHoc::where('maLopHP', $buoi->maLopHP)
+            ->where('thu', $data['thu'] ?? $buoi->thu)
+            ->where('maBuoi', '!=', $buoi->maBuoi)
+            ->where(function ($q) use ($data, $buoi) {
+                $start = $data['tietBatDau'] ?? $buoi->tietBatDau;
+                $end   = $data['tietKetThuc'] ?? $buoi->tietKetThuc;
+                $q->whereBetween('tietBatDau', [$start, $end])
+                  ->orWhereBetween('tietKetThuc', [$start, $end]);
+            })
+            ->exists();
+
+        if ($check) {
+            throw ValidationException::withMessages([
+                'tietBatDau' => 'Khung tiết bị trùng với buổi học khác.',
+            ]);
         }
-
-        $buoi->update($data);
-
-        return response()->json([
-            'message' => '✅ Cập nhật buổi học thành công',
-            'data'    => $buoi,
-        ]);
     }
+
+    $buoi->update($data);
+
+    return response()->json([
+        'message' => '✅ Cập nhật buổi học thành công',
+        'data'    => $buoi,
+    ]);
+}
+
 
     // 🔹 Xóa
     public function destroy($id)
