@@ -112,8 +112,8 @@ Route::prefix('v1')->group(function () {
 
         // 📸 Quản lý ảnh sinh viên
         Route::get('/khuonmat', [KhuonMatController::class, 'index']);
-        Route::post('/khuonmat/{maSV}', [KhuonMatController::class, 'updatePhoto']);
         Route::post('/khuonmat/import', [KhuonMatController::class, 'importExcel']);
+        Route::post('/khuonmat/{maSV}', [KhuonMatController::class, 'updatePhoto']);
 
 
         // Quản lý thông báo
