@@ -110,6 +110,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/khuonmat/{id}/approve', [KhuonMatController::class, 'approve']);
         Route::post('/khuonmat/{id}/reject', [KhuonMatController::class, 'reject']);
 
+        // 📸 Quản lý ảnh sinh viên
+        Route::get('/khuonmat', [KhuonMatController::class, 'index']);
+        Route::post('/khuonmat/{maSV}', [KhuonMatController::class, 'updatePhoto']);
+        Route::post('/khuonmat/import', [KhuonMatController::class, 'importExcel']);
+
+
         // Quản lý thông báo
         Route::get('/thongbao', [ThongBaoController::class, 'index']);
         Route::post('/thongbao', [ThongBaoController::class, 'store']);
