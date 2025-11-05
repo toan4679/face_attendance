@@ -78,13 +78,19 @@ class LopController extends Controller
 
     public function importSinhVienExcel(Request $request, $maLop)
 {
-    // 🔹 Kiểm tra có file gửi lên không
+
+
+    // 🧩 Kiểm tra có file gửi lên không
     if (!$request->hasFile('file')) {
-        // Nếu Flutter web gửi dạng base64/stream thì lấy trực tiếp từ body
+        Log::warning("⚠️ Không tìm thấy file trong request multipart.");
+
+        // Nếu Flutter web gửi dạng bytes (string hoặc stream)
         if ($request->has('file')) {
-            // Flutter Web: lưu tạm ra file
-            $tempPath = storage_path('app/temp_upload_'.time().'.xlsx');
-            file_put_contents($tempPath, $request->file); // ghi bytes ra file tạm
+            $tempPath = storage_path('app/temp_upload_' . time() . '.xlsx');
+            file_put_contents($tempPath, $request->file);
+
+            Log::info("📄 Tạo file tạm thành công tại $tempPath");
+
             $file = new \Illuminate\Http\UploadedFile(
                 $tempPath,
                 'temp.xlsx',
@@ -93,25 +99,33 @@ class LopController extends Controller
                 true
             );
         } else {
+            Log::error("❌ Không có file gửi lên trong cả form-data và body.");
             return response()->json(['message' => 'Không có file được gửi lên.'], 400);
         }
     } else {
         $file = $request->file('file');
+        Log::info("✅ Laravel nhận được file: " . $file->getClientOriginalName());
+        Log::info("📦 MIME: " . $file->getMimeType() . " | Size: " . $file->getSize());
     }
 
     try {
         Excel::import(new \App\Imports\SinhVienImport($maLop), $file);
 
+        Log::info("✅ Import sinh viên thành công cho lớp $maLop");
+
         return response()->json([
             'message' => '✅ Import sinh viên thành công!',
             'file_name' => $file->getClientOriginalName(),
         ]);
-    } catch (\Exception $e) {
-        Log::error('❌ Lỗi khi import sinh viên: '.$e->getMessage());
+    } catch (\Throwable $e) {
+        Log::error("❌ Lỗi khi import file Excel: " . $e->getMessage());
+        Log::error($e->getTraceAsString());
+
         return response()->json([
             'message' => '❌ Lỗi khi import file.',
             'error' => $e->getMessage(),
             'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
         ], 500);
     }
 }
