@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Buoihoc extends Model
+class BuoiHoc extends Model
 {
     use HasFactory;
 
@@ -14,9 +14,9 @@ class Buoihoc extends Model
     protected $fillable = [
         'maLopHP',
         'maGV',
-        'ngayHoc',
-        'gioBatDau',
-        'gioKetThuc',
+        'thu',          // ✅ thêm
+        'tietBatDau',   // ✅ thêm
+        'tietKetThuc',  // ✅ thêm
         'phongHoc',
         'maQR'
     ];
