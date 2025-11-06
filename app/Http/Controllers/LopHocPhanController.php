@@ -27,8 +27,12 @@ class LopHocPhanController extends Controller
                 'ngayBatDau' => 'required|date',
                 'ngayKetThuc' => 'required|date|after_or_equal:ngayBatDau',
                 'thongTinLichHoc' => 'nullable|string|max:255',
-                'dsMaLop' => 'nullable|array', // ✅ nhận mảng mã lớp
+                'dsMaLop' => 'nullable|array',
             ]);
+
+            if (isset($data['dsMaLop'])) {
+                $data['dsMaLop'] = json_encode($data['dsMaLop']); // ✅ lưu mảng thành JSON
+            }
 
             $lop = LopHocPhan::create($data);
             return response()->json($lop, 201);
@@ -43,22 +47,34 @@ class LopHocPhanController extends Controller
 
     public function update(Request $request, $id)
     {
-        $lop = LopHocPhan::findOrFail($id);
+        try {
+            $lop = LopHocPhan::findOrFail($id);
 
-        $data = $request->validate([
-            'maMon' => 'sometimes|exists:monhoc,maMon',
-            'maGV' => 'nullable|exists:giangvien,maGV',
-            'maSoLopHP' => 'sometimes|string|max:50',
-            'hocKy' => 'sometimes|string|max:20',
-            'namHoc' => 'sometimes|string|max:20',
-            'ngayBatDau' => 'nullable|date',
-            'ngayKetThuc' => 'nullable|date|after_or_equal:ngayBatDau',
-            'thongTinLichHoc' => 'nullable|string|max:255',
-            'dsMaLop' => 'nullable|array',
-        ]);
+            $data = $request->validate([
+                'maMon' => 'sometimes|exists:monhoc,maMon',
+                'maGV' => 'nullable|exists:giangvien,maGV',
+                'maSoLopHP' => 'sometimes|string|max:50',
+                'hocKy' => 'sometimes|string|max:20',
+                'namHoc' => 'sometimes|string|max:20',
+                'ngayBatDau' => 'nullable|date',
+                'ngayKetThuc' => 'nullable|date|after_or_equal:ngayBatDau',
+                'thongTinLichHoc' => 'nullable|string|max:255',
+                'dsMaLop' => 'nullable|array',
+            ]);
 
-        $lop->update($data);
-        return response()->json($lop);
+            if (isset($data['dsMaLop'])) {
+                $data['dsMaLop'] = json_encode($data['dsMaLop']);
+            }
+
+            $lop->update($data);
+            return response()->json($lop);
+        } catch (\Throwable $e) {
+            Log::error('❌ Lỗi cập nhật lớp học phần: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Lỗi khi cập nhật lớp học phần',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function show($id)
@@ -81,21 +97,39 @@ class LopHocPhanController extends Controller
         try {
             $lopHP = LopHocPhan::findOrFail($maLopHP);
 
-            if (empty($lopHP->dsMaLop)) {
+            // ✅ Chuẩn hóa dsMaLop
+            $dsMaLop = $lopHP->dsMaLop ?? [];
+
+            if (is_string($dsMaLop)) {
+                // Nếu lưu dạng JSON "[1,2,3]"
+                if (str_contains($dsMaLop, '[')) {
+                    $dsMaLop = json_decode($dsMaLop, true);
+                } else {
+                    // Nếu lưu dạng "1,2,3"
+                    $dsMaLop = array_filter(explode(',', $dsMaLop));
+                }
+            }
+
+            if (!is_array($dsMaLop)) {
+                $dsMaLop = [];
+            }
+
+            if (empty($dsMaLop)) {
                 return response()->json([
-                    'message' => 'Lớp học phần chưa gắn lớp hành chính nào.',
+                    'message' => 'Lớp học phần chưa gán lớp hành chính nào.',
                     'sinhVien' => [],
+                    'dsMaLop' => [],
                 ]);
             }
 
-            // Lấy danh sách sinh viên từ nhiều lớp
-            $sinhViens = SinhVien::whereIn('maLop', $lopHP->dsMaLop)
+            // ✅ Lấy danh sách sinh viên theo nhiều lớp hành chính
+            $sinhViens = SinhVien::whereIn('maLop', $dsMaLop)
                 ->select('maSV', 'maSo', 'hoTen', 'email', 'maLop', 'anhDaiDien')
                 ->get();
 
             return response()->json([
                 'lopHocPhan' => $lopHP->maSoLopHP,
-                'dsMaLop' => $lopHP->dsMaLop,
+                'dsMaLop' => $dsMaLop,
                 'tongSinhVien' => $sinhViens->count(),
                 'sinhVien' => $sinhViens,
             ]);
@@ -140,7 +174,7 @@ class LopHocPhanController extends Controller
                 'data'  => $ds,
             ]);
         } catch (\Throwable $e) {
-            Log::error('byGiangVien error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('byGiangVien error: ' . $e->getMessage());
             return response()->json([
                 'error' => [
                     'code' => 'SERVER_ERROR',
@@ -150,6 +184,9 @@ class LopHocPhanController extends Controller
         }
     }
 
+    /**
+     * 🧩 Gán lớp hành chính cho lớp học phần
+     */
     public function ganLopHanhChinh(Request $request, $maLopHP)
     {
         try {
@@ -160,15 +197,14 @@ class LopHocPhanController extends Controller
                 'dsMaLop.*' => 'exists:lop,maLop',
             ]);
 
-            // Gán danh sách lớp vào lớp học phần
             $lopHP->dsMaLop = json_encode($data['dsMaLop']);
             $lopHP->save();
 
             return response()->json([
-                'message' => 'Gán lớp hành chính thành công',
+                'message' => '✅ Gán lớp hành chính thành công',
                 'maLopHP' => $maLopHP,
                 'dsMaLop' => $data['dsMaLop']
-            ], 200);
+            ]);
         } catch (\Throwable $e) {
             Log::error('❌ Lỗi gán lớp hành chính: ' . $e->getMessage());
             return response()->json([
