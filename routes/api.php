@@ -143,6 +143,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/{id}/lophocphan', [GiangVienController::class, 'getLopHocPhan']);
         Route::get('/', [GiangVienController::class, 'getAll']);
         Route::get('/{id}', [GiangVienController::class, 'getDetail']);
+
+        // ✅ Thêm route cập nhật thông tin giảng viên
+        Route::put('{id}', [GiangVienController::class, 'update']);
         // QR điểm danh
         Route::post('/buoihoc/{maBuoi}/qr', [QRController::class, 'generate']);
         Route::post('/buoihoc/{maBuoi}/close', [QRController::class, 'close']);
