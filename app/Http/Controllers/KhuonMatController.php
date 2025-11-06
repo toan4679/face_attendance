@@ -15,9 +15,9 @@ class KhuonMatController extends Controller
         $query = SinhVien::with(['lop.nganh.khoa', 'khuonmat']);
 
         if ($search = $request->input('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('hoTen', 'LIKE', "%$search%")
-                  ->orWhere('maSo', 'LIKE', "%$search%");
+                    ->orWhere('maSo', 'LIKE', "%$search%");
             });
         }
 
@@ -46,18 +46,26 @@ class KhuonMatController extends Controller
         ]);
     }
 
-        // ✅ Upload hoặc cập nhật ảnh khuôn mặt
-    public function updatePhoto(Request $request, $maSV)
+    // ✅ Upload hoặc cập nhật ảnh khuôn mặt
+    public function updatePhoto(Request $request)
     {
         $request->validate([
-            'photo' => 'required|image|max:2048',
+            'maSV' => 'required',
+            'photo' => 'required|image|mimes:jpg,jpeg,png|max:4096',
         ]);
+
+        $sinhVien = SinhVien::where('maSV', $request->maSV)->first();
+
+        if (!$sinhVien) {
+            return response()->json(['message' => 'Không tìm thấy sinh viên'], 404);
+        }
 
         $file = $request->file('photo');
         $filePath = $file->store('faces', 'public');
 
-        $khuonmat = KhuonMat::updateOrCreate(
-            ['maSV' => $maSV],
+        // Cập nhật hoặc tạo mới bản ghi khuôn mặt
+        $khuonmat = \App\Models\KhuonMat::updateOrCreate(
+            ['maSV' => $sinhVien->maSV],
             ['duongDanAnh' => 'storage/' . $filePath]
         );
 
@@ -67,7 +75,7 @@ class KhuonMatController extends Controller
         ]);
     }
 
-        // ✅ Import danh sách sinh viên chưa có ảnh
+    // ✅ Import danh sách sinh viên chưa có ảnh
     public function importExcel(Request $request)
     {
         $request->validate([
@@ -80,4 +88,3 @@ class KhuonMatController extends Controller
         return response()->json(['message' => 'Import danh sách sinh viên thành công']);
     }
 }
-

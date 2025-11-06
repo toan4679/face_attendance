@@ -105,10 +105,6 @@ Route::prefix('v1')->group(function () {
         // Gán lịch giảng dạy
         Route::post('/schedule/assign', [PDTController::class, 'assignSchedule']);
 
-        // Quản lý khuôn mặt sinh viên
-        Route::get('/khuonmat/pending', [KhuonMatController::class, 'pending']);
-        Route::post('/khuonmat/{id}/approve', [KhuonMatController::class, 'approve']);
-        Route::post('/khuonmat/{id}/reject', [KhuonMatController::class, 'reject']);
 
         // 📸 Quản lý ảnh sinh viên
         Route::get('/khuonmat', [KhuonMatController::class, 'index']);
@@ -121,6 +117,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/thongbao', [ThongBaoController::class, 'store']);
         Route::delete('/thongbao/{id}', [ThongBaoController::class, 'destroy']);
     });
+    // 📸 Quản lý ảnh sinh viên
+    Route::prefix('khuonmat')->group(function () {
+        Route::get('/', [KhuonMatController::class, 'index']);               // Lấy danh sách sinh viên & ảnh
+        Route::post('/import', [KhuonMatController::class, 'importExcel']);  // Import sinh viên từ Excel
+        Route::post('/upload', [KhuonMatController::class, 'updatePhoto']);  // Upload / cập nhật ảnh
+    });
+
 
     /*
     |--------------------------------------------------------------------------
