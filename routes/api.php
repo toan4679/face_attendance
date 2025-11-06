@@ -110,6 +110,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/khuonmat', [KhuonMatController::class, 'index']);
         Route::post('/khuonmat/import', [KhuonMatController::class, 'importExcel']);
         Route::post('/khuonmat/{maSV}', [KhuonMatController::class, 'updatePhoto']);
+        Route::post('/khuonmat/upload', [KhuonMatController::class, 'updatePhoto']);
+
 
 
         // Quản lý thông báo

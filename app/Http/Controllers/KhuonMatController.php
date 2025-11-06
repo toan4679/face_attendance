@@ -50,30 +50,24 @@ class KhuonMatController extends Controller
     public function updatePhoto(Request $request)
     {
         $request->validate([
-            'maSV' => 'required',
-            'photo' => 'required|image|mimes:jpg,jpeg,png|max:4096',
+            'maSV' => 'required|integer|exists:sinhvien,maSV',
+            'photo' => 'required|image|max:2048',
         ]);
-
-        $sinhVien = SinhVien::where('maSV', $request->maSV)->first();
-
-        if (!$sinhVien) {
-            return response()->json(['message' => 'Không tìm thấy sinh viên'], 404);
-        }
 
         $file = $request->file('photo');
         $filePath = $file->store('faces', 'public');
 
-        // Cập nhật hoặc tạo mới bản ghi khuôn mặt
-        $khuonmat = \App\Models\KhuonMat::updateOrCreate(
-            ['maSV' => $sinhVien->maSV],
+        $khuonmat = KhuonMat::updateOrCreate(
+            ['maSV' => $request->maSV],
             ['duongDanAnh' => 'storage/' . $filePath]
         );
 
         return response()->json([
             'message' => 'Cập nhật ảnh khuôn mặt thành công!',
-            'duongDanAnh' => asset($khuonmat->duongDanAnh)
+            'duongDanAnh' => asset($khuonmat->duongDanAnh),
         ]);
     }
+
 
     // ✅ Import danh sách sinh viên chưa có ảnh
     public function importExcel(Request $request)
