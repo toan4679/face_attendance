@@ -24,7 +24,7 @@ class GiangVien extends Authenticatable
 
     protected $hidden = ['matKhau'];
 
-   
+
 
     public function lopHocPhan()
     {
@@ -34,5 +34,13 @@ class GiangVien extends Authenticatable
     public function buoiHoc()
     {
         return $this->hasMany(BuoiHoc::class, 'maGV', 'maGV');
+    }
+    public function khoa()
+    {
+        return $this->belongsTo(Khoa::class, 'maKhoa', 'maKhoa');
+    }
+    public function nganh()
+    {
+        return $this->belongsTo(Nganh::class, 'maNganh', 'maNganh');
     }
 }

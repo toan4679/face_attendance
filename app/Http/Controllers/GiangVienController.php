@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\GiangVien;
 use Illuminate\Http\Request;
+use App\Models\LopHocPhan;
+use Illuminate\Support\Facades\Log;
 
 class GiangVienController extends Controller
 {
@@ -12,7 +14,37 @@ class GiangVienController extends Controller
         $data = GiangVien::all();
         return response()->json(['data' => $data]);
     }
+    public function getAll()
+    {
+        $giangviens = GiangVien::with('khoa', 'nganh')->get();
+        return response()->json([
+            'status' => true,
+            'data' => $giangviens
+        ]);
+    }
 
+    public function getDetail($id)
+    {
+        try {
+            $giangVien = GiangVien::with(['khoa', 'nganh', 'lophocphan'])->find($id);
+
+            if (!$giangVien) {
+                return response()->json(['success' => false, 'message' => 'Không tìm thấy giảng viên'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $giangVien,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi lấy chi tiết giảng viên: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy chi tiết giảng viên.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -58,5 +90,25 @@ class GiangVienController extends Controller
 
         $gv->delete();
         return response()->json(['message' => 'Xóa thành công']);
+    }
+    public function getLopHocPhan($id)
+    {
+        // $id là mã giảng viên (maGV)
+        $giangvien = GiangVien::where('maGV', $id)->first();
+        if (!$giangvien) {
+            return response()->json(['status' => false, 'message' => 'Không tìm thấy giảng viên'], 404);
+        }
+
+        $lopHocPhans = LopHocPhan::with([
+            'monHoc',
+            'buoiHoc',                     // lịch buổi học
+            'dangKyHoc.sinhVien'           // lấy qua bảng dangkyhoc -> sinhvien
+        ])->where('maGV', $giangvien->maGV)->get();
+
+        return response()->json([
+            'status' => true,
+            'total' => $lopHocPhans->count(),
+            'data' => $lopHocPhans
+        ]);
     }
 }
