@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\GiangVien;
 use Illuminate\Http\Request;
 use App\Models\LopHocPhan;
+use Illuminate\Support\Facades\Log;
 class GiangVienController extends Controller
 {
     public function index()
@@ -23,19 +24,25 @@ class GiangVienController extends Controller
 
     public function getDetail($id)
     {
-        $giangvien = GiangVien::with(['khoa', 'nganh', 'lophocphans.monhoc'])->find($id);
+         try {
+            $giangVien = GiangVien::with(['khoa', 'nganh', 'lophocphan'])->find($id);
 
-        if (!$giangvien) {
+            if (!$giangVien) {
+                return response()->json(['success' => false, 'message' => 'Không tìm thấy giảng viên'], 404);
+            }
+
             return response()->json([
-                'status' => false,
-                'message' => 'Giảng viên không tồn tại'
-            ], 404);
+                'success' => true,
+                'data' => $giangVien,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi lấy chi tiết giảng viên: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy chi tiết giảng viên.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'status' => true,
-            'data' => $giangvien
-        ]);
     }
     public function store(Request $request)
     {
@@ -92,6 +99,7 @@ class GiangVienController extends Controller
 
         $lopHocPhans = LopHocPhan::with([
             'monhoc',
+            'dangkyhoc.sinhvien',
             'sinhviens' => function ($query) {
                 $query->select('sinhvien.*', 'dangkyhoc.ma_lophocphan')
                     ->join('dangkyhoc', 'sinhvien.ma_sv', '=', 'dangkyhoc.ma_sv');
@@ -100,6 +108,7 @@ class GiangVienController extends Controller
 
         return response()->json([
             'status' => true,
+            'total' => $lopHocPhans->count(),
             'data' => $lopHocPhans
         ]);
     }
