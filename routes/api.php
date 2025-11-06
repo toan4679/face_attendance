@@ -136,6 +136,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('giangvien')->middleware('auth:sanctum')->group(function () {
         Route::get('/lichday', [LichDayController::class, 'index']);
         Route::get('/lophocphan', [LopHocPhanController::class, 'byGiangVien']);
+        Route::get('/lophocphan2', [GiangVienController::class, 'getLopHocPhan']);
         Route::get('/', [GiangVienController::class, 'getAll']);
         Route::get('/{id}', [GiangVienController::class, 'getDetail']);
         // QR điểm danh
