@@ -16,7 +16,7 @@ class SinhVien extends Authenticatable
 
     protected $fillable = [
         'maNganh',
-        'maLop',         // ✅ Sửa lại đúng cột trong DB
+        'maLop',
         'maSo',
         'hoTen',
         'email',
@@ -35,25 +35,13 @@ class SinhVien extends Authenticatable
         return $this->belongsTo(Nganh::class, 'maNganh', 'maNganh');
     }
 
-    // ✅ Quan hệ tới bảng lop (lớp hành chính)
+    // ✅ Quan hệ tới bảng lop
     public function lop()
     {
         return $this->belongsTo(Lop::class, 'maLop', 'maLop');
     }
 
-    // ✅ Quan hệ tới đăng ký học (lớp học phần)
-    public function dangKyHoc()
-    {
-        return $this->hasMany(DangKyHoc::class, 'maSV', 'maSV');
-    }
-
-    // ✅ Quan hệ nhiều-nhiều qua bảng dangkyhoc
-    public function lopHocPhan()
-    {
-        return $this->belongsToMany(LopHocPhan::class, 'dangkyhoc', 'maSV', 'maLopHP');
-    }
-
-    // ✅ Quan hệ khuôn mặt
+    // ✅ Quan hệ khuôn mặt (1-1)
     public function khuonMat()
     {
         return $this->hasOne(KhuonMat::class, 'maSV', 'maSV');

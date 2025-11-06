@@ -66,9 +66,29 @@ class LopController extends Controller
     public function getSinhVienByLop($maLop)
     {
         try {
-            $sinhvien = \App\Models\SinhVien::where('maLop', $maLop)->get();
-            return response()->json($sinhvien);
+            // 🧠 Lấy danh sách sinh viên cùng khuôn mặt
+            $sinhviens = \App\Models\SinhVien::with('khuonMat')
+                ->where('maLop', $maLop)
+                ->get()
+                ->map(function ($sv) {
+                    // ✅ Nếu có khuôn mặt, tạo URL đầy đủ
+                    $anh = $sv->khuonMat && $sv->khuonMat->duongDanAnh
+                        ? asset($sv->khuonMat->duongDanAnh)
+                        : null;
+
+                    return [
+                        'maSV' => $sv->maSV,
+                        'maSo' => $sv->maSo,
+                        'hoTen' => $sv->hoTen,
+                        'email' => $sv->email,
+                        'maLop' => $sv->maLop,
+                        'duongDanAnh' => $anh,
+                    ];
+                });
+
+            return response()->json($sinhviens);
         } catch (\Exception $e) {
+            Log::error("❌ Lỗi khi lấy danh sách sinh viên lớp $maLop: " . $e->getMessage());
             return response()->json([
                 'message' => '❌ Lỗi khi lấy danh sách sinh viên.',
                 'error' => $e->getMessage()
@@ -76,57 +96,57 @@ class LopController extends Controller
         }
     }
 
+
     public function importSinhVienExcel(Request $request, $maLop)
-{
+    {
 
-    // 🧩 Kiểm tra có file gửi lên không
-    if (!$request->hasFile('file')) {
-        Log::warning("⚠️ Không tìm thấy file trong request multipart.");
+        // 🧩 Kiểm tra có file gửi lên không
+        if (!$request->hasFile('file')) {
+            Log::warning("⚠️ Không tìm thấy file trong request multipart.");
 
-        // Nếu Flutter web gửi dạng bytes (string hoặc stream)
-        if ($request->has('file')) {
-            $tempPath = storage_path('app/temp_upload_' . time() . '.xlsx');
-            file_put_contents($tempPath, $request->file);
+            // Nếu Flutter web gửi dạng bytes (string hoặc stream)
+            if ($request->has('file')) {
+                $tempPath = storage_path('app/temp_upload_' . time() . '.xlsx');
+                file_put_contents($tempPath, $request->file);
 
-            Log::info("📄 Tạo file tạm thành công tại $tempPath");
+                Log::info("📄 Tạo file tạm thành công tại $tempPath");
 
-            $file = new \Illuminate\Http\UploadedFile(
-                $tempPath,
-                'temp.xlsx',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                null,
-                true
-            );
+                $file = new \Illuminate\Http\UploadedFile(
+                    $tempPath,
+                    'temp.xlsx',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    null,
+                    true
+                );
+            } else {
+                Log::error("❌ Không có file gửi lên trong cả form-data và body.");
+                return response()->json(['message' => 'Không có file được gửi lên.'], 400);
+            }
         } else {
-            Log::error("❌ Không có file gửi lên trong cả form-data và body.");
-            return response()->json(['message' => 'Không có file được gửi lên.'], 400);
+            $file = $request->file('file');
+            Log::info("✅ Laravel nhận được file: " . $file->getClientOriginalName());
+            Log::info("📦 MIME: " . $file->getMimeType() . " | Size: " . $file->getSize());
         }
-    } else {
-        $file = $request->file('file');
-        Log::info("✅ Laravel nhận được file: " . $file->getClientOriginalName());
-        Log::info("📦 MIME: " . $file->getMimeType() . " | Size: " . $file->getSize());
+
+        try {
+            Excel::import(new \App\Imports\SinhVienImport($maLop), $file);
+
+            Log::info("✅ Import sinh viên thành công cho lớp $maLop");
+
+            return response()->json([
+                'message' => '✅ Import sinh viên thành công!',
+                'file_name' => $file->getClientOriginalName(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("❌ Lỗi khi import file Excel: " . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
+            return response()->json([
+                'message' => '❌ Lỗi khi import file.',
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
+        }
     }
-
-    try {
-        Excel::import(new \App\Imports\SinhVienImport($maLop), $file);
-
-        Log::info("✅ Import sinh viên thành công cho lớp $maLop");
-
-        return response()->json([
-            'message' => '✅ Import sinh viên thành công!',
-            'file_name' => $file->getClientOriginalName(),
-        ]);
-    } catch (\Throwable $e) {
-        Log::error("❌ Lỗi khi import file Excel: " . $e->getMessage());
-        Log::error($e->getTraceAsString());
-
-        return response()->json([
-            'message' => '❌ Lỗi khi import file.',
-            'error' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-}
-
 }
