@@ -70,4 +70,47 @@ class LopHocPhanController extends Controller
         LopHocPhan::destroy($id);
         return response()->json(['message' => 'Xóa lớp học phần thành công']);
     }
+     /**
+     * Lấy danh sách Lớp học phần do giảng viên (đang đăng nhập) phụ trách
+     * Route: GET /api/v1/giangvien/lophocphan
+     */
+    public function byGiangVien(Request $request)
+    {
+        $user = $request->user();
+
+        // Bảo vệ: chưa đăng nhập hoặc tài khoản không phải giảng viên
+        if (!$user || empty($user->maGV)) {
+            return response()->json([
+                'error' => [
+                    'code' => 'INVALID_USER',
+                    'message' => 'Không xác định giảng viên hoặc chưa đăng nhập'
+                ]
+            ], 401);
+        }
+
+        try {
+            $ds = LopHocPhan::with(['monHoc', 'giangVien'])
+                ->where('maGV', $user->maGV)
+                ->orderByDesc('created_at')
+                ->get();
+
+            return response()->json([
+                'giangVien' => [
+                    'maGV'  => $user->maGV,
+                    'hoTen' => $user->hoTen ?? null,
+                    'email' => $user->email ?? null,
+                ],
+                'count' => $ds->count(),
+                'data'  => $ds,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('byGiangVien error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'error' => [
+                    'code' => 'SERVER_ERROR',
+                    'message' => 'Không thể tải danh sách lớp học phần',
+                ]
+            ], 500);
+        }
+    }
 }
