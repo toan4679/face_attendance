@@ -19,9 +19,14 @@ class LopHocPhan extends Model
         'maSoLopHP',
         'hocKy',
         'namHoc',
-        'ngayBatDau',   
-        'ngayKetThuc',   
+        'ngayBatDau',
+        'ngayKetThuc',
         'thongTinLichHoc',
+        'dsMaLop', // ✅ thêm vào
+    ];
+
+    protected $casts = [
+        'dsMaLop' => 'array', // ✅ tự decode JSON sang mảng PHP
     ];
 
     public function monHoc()

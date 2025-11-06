@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\LopHocPhan;
+use App\Models\SinhVien;
 use Illuminate\Support\Facades\Log;
 
 class LopHocPhanController extends Controller
@@ -26,6 +27,7 @@ class LopHocPhanController extends Controller
                 'ngayBatDau' => 'required|date',
                 'ngayKetThuc' => 'required|date|after_or_equal:ngayBatDau',
                 'thongTinLichHoc' => 'nullable|string|max:255',
+                'dsMaLop' => 'nullable|array', // ✅ nhận mảng mã lớp
             ]);
 
             $lop = LopHocPhan::create($data);
@@ -38,7 +40,6 @@ class LopHocPhanController extends Controller
             ], 500);
         }
     }
-
 
     public function update(Request $request, $id)
     {
@@ -53,6 +54,7 @@ class LopHocPhanController extends Controller
             'ngayBatDau' => 'nullable|date',
             'ngayKetThuc' => 'nullable|date|after_or_equal:ngayBatDau',
             'thongTinLichHoc' => 'nullable|string|max:255',
+            'dsMaLop' => 'nullable|array',
         ]);
 
         $lop->update($data);
@@ -70,15 +72,49 @@ class LopHocPhanController extends Controller
         LopHocPhan::destroy($id);
         return response()->json(['message' => 'Xóa lớp học phần thành công']);
     }
-     /**
-     * Lấy danh sách Lớp học phần do giảng viên (đang đăng nhập) phụ trách
-     * Route: GET /api/v1/giangvien/lophocphan
+
+    /**
+     * 🔍 Lấy danh sách sinh viên theo Lớp học phần
+     */
+    public function getSinhVienByLopHocPhan($maLopHP)
+    {
+        try {
+            $lopHP = LopHocPhan::findOrFail($maLopHP);
+
+            if (empty($lopHP->dsMaLop)) {
+                return response()->json([
+                    'message' => 'Lớp học phần chưa gắn lớp hành chính nào.',
+                    'sinhVien' => [],
+                ]);
+            }
+
+            // Lấy danh sách sinh viên từ nhiều lớp
+            $sinhViens = SinhVien::whereIn('maLop', $lopHP->dsMaLop)
+                ->select('maSV', 'maSo', 'hoTen', 'email', 'maLop', 'anhDaiDien')
+                ->get();
+
+            return response()->json([
+                'lopHocPhan' => $lopHP->maSoLopHP,
+                'dsMaLop' => $lopHP->dsMaLop,
+                'tongSinhVien' => $sinhViens->count(),
+                'sinhVien' => $sinhViens,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('❌ Lỗi lấy sinh viên lớp học phần: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Lỗi server khi lấy danh sách sinh viên.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * 📘 Danh sách Lớp học phần do giảng viên phụ trách
      */
     public function byGiangVien(Request $request)
     {
         $user = $request->user();
 
-        // Bảo vệ: chưa đăng nhập hoặc tài khoản không phải giảng viên
         if (!$user || empty($user->maGV)) {
             return response()->json([
                 'error' => [
@@ -104,7 +140,7 @@ class LopHocPhanController extends Controller
                 'data'  => $ds,
             ]);
         } catch (\Throwable $e) {
-            Log::error('byGiangVien error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('byGiangVien error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([
                 'error' => [
                     'code' => 'SERVER_ERROR',
