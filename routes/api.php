@@ -136,10 +136,12 @@ Route::prefix('v1')->group(function () {
     Route::prefix('giangvien')->middleware('auth:sanctum')->group(function () {
         Route::get('/lichday', [LichDayController::class, 'index']);
         Route::get('/lophocphan', [LopHocPhanController::class, 'byGiangVien']);
-
+        Route::get('giangvien', [GiangVienController::class, 'getAll']);
+        Route::get('giangvien/{id}', [GiangVienController::class, 'getDetail']);
         // QR điểm danh
         Route::post('/buoihoc/{maBuoi}/qr', [QRController::class, 'generate']);
         Route::post('/buoihoc/{maBuoi}/close', [QRController::class, 'close']);
+        Route::get('giangvien/{id}/lophocphan', [GiangVienController::class, 'getLopHocPhan']);
 
         // Điểm danh thủ công
         Route::get('/buoihoc/{maBuoi}/diemdanh', [DiemDanhController::class, 'listByBuoi']);

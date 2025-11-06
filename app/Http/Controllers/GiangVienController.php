@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GiangVien;
 use Illuminate\Http\Request;
-
+use App\Models\LopHocPhan;
 class GiangVienController extends Controller
 {
     public function index()
@@ -12,7 +12,31 @@ class GiangVienController extends Controller
         $data = GiangVien::all();
         return response()->json(['data' => $data]);
     }
+    public function getAll()
+    {
+        $giangviens = GiangVien::with('khoa', 'nganh')->get();
+        return response()->json([
+            'status' => true,
+            'data' => $giangviens
+        ]);
+    }
 
+    public function getDetail($id)
+    {
+        $giangvien = GiangVien::with(['khoa', 'nganh', 'lophocphans.monhoc'])->find($id);
+
+        if (!$giangvien) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Giảng viên không tồn tại'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $giangvien
+        ]);
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -58,5 +82,25 @@ class GiangVienController extends Controller
 
         $gv->delete();
         return response()->json(['message' => 'Xóa thành công']);
+    }
+    public function getLopHocPhan($id)
+    {
+        $giangvien = GiangVien::find($id);
+        if (!$giangvien) {
+            return response()->json(['status' => false, 'message' => 'Không tìm thấy giảng viên'], 404);
+        }
+
+        $lopHocPhans = LopHocPhan::with([
+            'monhoc',
+            'sinhviens' => function ($query) {
+                $query->select('sinhvien.*', 'dangkyhoc.ma_lophocphan')
+                    ->join('dangkyhoc', 'sinhvien.ma_sv', '=', 'dangkyhoc.ma_sv');
+            }
+        ])->where('ma_gv', $giangvien->ma_gv)->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $lopHocPhans
+        ]);
     }
 }
