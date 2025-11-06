@@ -97,7 +97,7 @@ Route::prefix('v1')->group(function () {
         // 📥 Import sinh viên từ Excel
         Route::post('/lop/{maLop}/import-sinhvien', [LopController::class, 'importSinhVienExcel']);
 
-        Route::get('/pdt/lophocphan/{maLopHP}/sinhvien', [LopHocPhanController::class, 'getSinhVienByLopHocPhan']);
+        Route::get('/lophocphan/{maLopHP}/sinhvien', [LopHocPhanController::class, 'getSinhVienByLopHocPhan']);
 
 
 
