@@ -98,6 +98,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/lop/{maLop}/import-sinhvien', [LopController::class, 'importSinhVienExcel']);
 
         Route::get('/lophocphan/{maLopHP}/sinhvien', [LopHocPhanController::class, 'getSinhVienByLopHocPhan']);
+        Route::patch('/lophocphan/{maLopHP}/gan-lop', [LopHocPhanController::class, 'ganLopHanhChinh']);
 
 
 

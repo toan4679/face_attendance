@@ -149,4 +149,32 @@ class LopHocPhanController extends Controller
             ], 500);
         }
     }
+
+    public function ganLopHanhChinh(Request $request, $maLopHP)
+    {
+        try {
+            $lopHP = LopHocPhan::findOrFail($maLopHP);
+
+            $data = $request->validate([
+                'dsMaLop' => 'required|array',
+                'dsMaLop.*' => 'exists:lop,maLop',
+            ]);
+
+            // Gán danh sách lớp vào lớp học phần
+            $lopHP->dsMaLop = json_encode($data['dsMaLop']);
+            $lopHP->save();
+
+            return response()->json([
+                'message' => 'Gán lớp hành chính thành công',
+                'maLopHP' => $maLopHP,
+                'dsMaLop' => $data['dsMaLop']
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('❌ Lỗi gán lớp hành chính: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Không thể gán lớp hành chính',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
