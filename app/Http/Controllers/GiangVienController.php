@@ -6,6 +6,7 @@ use App\Models\GiangVien;
 use Illuminate\Http\Request;
 use App\Models\LopHocPhan;
 use Illuminate\Support\Facades\Log;
+
 class GiangVienController extends Controller
 {
     public function index()
@@ -24,7 +25,7 @@ class GiangVienController extends Controller
 
     public function getDetail($id)
     {
-         try {
+        try {
             $giangVien = GiangVien::with(['khoa', 'nganh', 'lophocphan'])->find($id);
 
             if (!$giangVien) {
@@ -92,19 +93,17 @@ class GiangVienController extends Controller
     }
     public function getLopHocPhan($id)
     {
-        $giangvien = GiangVien::find($id);
+        // $id là mã giảng viên (maGV)
+        $giangvien = GiangVien::where('maGV', $id)->first();
         if (!$giangvien) {
             return response()->json(['status' => false, 'message' => 'Không tìm thấy giảng viên'], 404);
         }
 
         $lopHocPhans = LopHocPhan::with([
-            'monhoc',
-            'dangkyhoc.sinhvien',
-            'sinhviens' => function ($query) {
-                $query->select('sinhvien.*', 'dangkyhoc.ma_lophocphan')
-                    ->join('dangkyhoc', 'sinhvien.ma_sv', '=', 'dangkyhoc.ma_sv');
-            }
-        ])->where('ma_gv', $giangvien->ma_gv)->get();
+            'monHoc',
+            'buoiHoc',                     // lịch buổi học
+            'dangKyHoc.sinhVien'           // lấy qua bảng dangkyhoc -> sinhvien
+        ])->where('maGV', $giangvien->maGV)->get();
 
         return response()->json([
             'status' => true,

@@ -142,7 +142,7 @@ Route::prefix('v1')->group(function () {
         // QR điểm danh
         Route::post('/buoihoc/{maBuoi}/qr', [QRController::class, 'generate']);
         Route::post('/buoihoc/{maBuoi}/close', [QRController::class, 'close']);
-      
+
 
         // Điểm danh thủ công
         Route::get('/buoihoc/{maBuoi}/diemdanh', [DiemDanhController::class, 'listByBuoi']);
