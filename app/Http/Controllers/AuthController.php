@@ -84,7 +84,7 @@ class AuthController extends Controller
             'matKhau' => 'required|string',
         ]);
 
-        // Danh sách model ứng với từng role
+        // Danh sách model ứng với từng loại tài khoản
         $map = [
             'admin'     => Admin::class,
             'pdt'       => PhongDaoTao::class,
@@ -95,7 +95,7 @@ class AuthController extends Controller
         $user = null;
         $role = null;
 
-        // ✅ Tự động tìm xem email này thuộc role nào
+        // ✅ Tự động tìm xem email thuộc bảng nào
         foreach ($map as $key => $model) {
             $candidate = $model::where('email', $data['email'])->first();
             if ($candidate) {
@@ -105,7 +105,7 @@ class AuthController extends Controller
             }
         }
 
-        // Không tìm thấy email trong bất kỳ bảng nào
+        // ❌ Không tồn tại email
         if (!$user) {
             return response()->json([
                 'error' => [
@@ -115,7 +115,7 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Check mật khẩu
+        // ❌ Sai mật khẩu
         if (!Hash::check($data['matKhau'], $user->matKhau)) {
             return response()->json([
                 'error' => [
@@ -125,20 +125,21 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Tạo token Sanctum
+        // ✅ Tạo token Sanctum
         $token = $user->createToken('api')->plainTextToken;
 
         return response()->json([
             'message' => 'Đăng nhập thành công',
-            'token' => $token,
-            'user' => [
-                'id' => $user->getKey(),
-                'hoTen' => $user->hoTen ?? ($user->name ?? null),
-                'email' => $user->email,
-                'vaiTro' => $role,
-            ]
+            'token'   => $token,
+            'role'    => $role, // 👈 Thêm key này để Flutter dễ xử lý
+            'user'    => [
+                'id'     => $user->getKey(),
+                'hoTen'  => $user->hoTen ?? ($user->name ?? null),
+                'email'  => $user->email,
+            ],
         ], 200);
     }
+
 
     /**
      * Đăng xuất
