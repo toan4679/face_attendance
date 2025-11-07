@@ -21,12 +21,10 @@ class BuoiHocController extends Controller
         return response()->json($buoiHocs);
     }
 
-    /**
-     * ✅ Tạo mã QR cho buổi học
-     */
-    public function generateQR(Request $request, $maBuoi)
+      // Tạo mã QR
+    public function generateQR(Request $request, $idBuoiHoc)
     {
-        $buoiHoc = BuoiHoc::find($maBuoi);
+        $buoiHoc = BuoiHoc::find($idBuoiHoc);
 
         if (!$buoiHoc) {
             return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
@@ -34,7 +32,6 @@ class BuoiHocController extends Controller
 
         // Tạo mã QR ngẫu nhiên
         $maQR = strtoupper(Str::random(8));
-
         $buoiHoc->maQR = $maQR;
         $buoiHoc->save();
 
@@ -45,12 +42,10 @@ class BuoiHocController extends Controller
         ]);
     }
 
-    /**
-     * ❌ Xóa mã QR khi kết thúc buổi học
-     */
-    public function clearQR($maBuoi)
+    // Xóa mã QR
+    public function clearQR($idBuoiHoc)
     {
-        $buoiHoc = BuoiHoc::find($maBuoi);
+        $buoiHoc = BuoiHoc::find($idBuoiHoc);
 
         if (!$buoiHoc) {
             return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
@@ -62,12 +57,10 @@ class BuoiHocController extends Controller
         return response()->json(['message' => 'Đã xóa mã QR thành công']);
     }
 
-    /**
-     * 📅 Lấy thông tin chi tiết 1 buổi học
-     */
-    public function getDetail($maBuoi)
+    // Lấy chi tiết buổi học
+    public function getDetail($idBuoiHoc)
     {
-        $buoiHoc = BuoiHoc::with(['giangVien', 'lopHocPhan'])->find($maBuoi);
+        $buoiHoc = BuoiHoc::with(['giangVien', 'lopHocPhan'])->find($idBuoiHoc);
 
         if (!$buoiHoc) {
             return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
