@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\BuoiHoc;
+use App\Models\LopHocPhan;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class BuoiHocController extends Controller
 {
@@ -45,20 +48,7 @@ class BuoiHocController extends Controller
             'gioKetThuc'  => 'nullable|string|max:10',
         ]);
 
-        // 🔍 Kiểm tra trùng lịch
-        $conflict = BuoiHoc::where('maLopHP', $data['maLopHP'])
-            ->where('thu', $data['thu'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('tietBatDau', [$data['tietBatDau'], $data['tietKetThuc']])
-                  ->orWhereBetween('tietKetThuc', [$data['tietBatDau'], $data['tietKetThuc']]);
-            })
-            ->exists();
-
-        if ($conflict) {
-            throw ValidationException::withMessages([
-                'tietBatDau' => 'Khung tiết này đã được sử dụng cho buổi học khác trong cùng lớp học phần.',
-            ]);
-        }
+        $this->checkConflict($data);
 
         $buoi = BuoiHoc::create($data);
 
@@ -69,15 +59,16 @@ class BuoiHocController extends Controller
     }
 
     /**
-     * 🔹 Tạo nhiều buổi học cùng lúc
+     * 🔹 Tạo nhiều buổi học hàng loạt (theo danh sách ngày & thứ)
      * POST /api/v1/pdt/buoihoc/multiple
      */
     public function storeMultiple(Request $request)
     {
-        $list = $request->input('list', []);
+        // 🔸 Cho phép key là 'list' hoặc 'items'
+        $list = $request->input('list', $request->input('items', []));
 
         if (empty($list)) {
-            return response()->json(['message' => 'Danh sách trống'], 400);
+            return response()->json(['message' => '⚠️ Danh sách buổi học trống.'], 400);
         }
 
         $created = [];
@@ -90,39 +81,99 @@ class BuoiHocController extends Controller
                 'tietBatDau'  => $item['tietBatDau'] ?? null,
                 'tietKetThuc' => $item['tietKetThuc'] ?? null,
                 'phongHoc'    => $item['phongHoc'] ?? null,
-                'ngayHoc'     => $item['ngayHoc'] ?? null,
-                'gioBatDau'   => $item['gioBatDau'] ?? null,
-                'gioKetThuc'  => $item['gioKetThuc'] ?? null,
             ];
 
-            // ✅ Validate từng dòng
+            // 🔹 Validate cơ bản
             $validated = validator($data, [
                 'maLopHP'     => 'required|exists:lophocphan,maLopHP',
                 'thu'         => 'required|string|max:20',
                 'tietBatDau'  => 'required|integer|min:1|max:12',
                 'tietKetThuc' => 'required|integer|gte:tietBatDau|max:12',
                 'phongHoc'    => 'required|string|max:50',
-                'ngayHoc'     => 'required|date',
-                'gioBatDau'   => 'nullable|string|max:10',
-                'gioKetThuc'  => 'nullable|string|max:10',
             ])->validate();
 
-            $created[] = BuoiHoc::create($validated);
+            // 🔹 Lấy ngày học tương ứng với thứ trong tuần (từ lịch của lớp học phần)
+            $lhp = LopHocPhan::find($validated['maLopHP']);
+            if (!$lhp || !$lhp->ngayBatDau || !$lhp->ngayKetThuc) {
+                throw ValidationException::withMessages([
+                    'maLopHP' => 'Lớp học phần không có thông tin ngày bắt đầu/kết thúc.',
+                ]);
+            }
+
+            $ngayHocList = $this->generateDatesForThu(
+                $validated['thu'],
+                $lhp->ngayBatDau,
+                $lhp->ngayKetThuc
+            );
+
+            foreach ($ngayHocList as $ngayHoc) {
+                $row = array_merge($validated, [
+                    'ngayHoc'   => $ngayHoc->toDateString(),
+                    'gioBatDau' => $item['gioBatDau'] ?? null,
+                    'gioKetThuc' => $item['gioKetThuc'] ?? null,
+                ]);
+
+                // 🔍 Check trùng lịch
+                $this->checkConflict($row);
+
+                $created[] = BuoiHoc::create($row);
+            }
         }
 
         return response()->json([
-            'message' => '✅ Đã tạo ' . count($created) . ' buổi học thành công',
+            'message' => '✅ Đã tạo ' . count($created) . ' buổi học thành công.',
             'count'   => count($created),
         ]);
     }
 
     /**
-     * 🔹 Xem chi tiết 1 buổi học
+     * 🔎 Sinh danh sách ngày theo "thứ" trong khoảng
      */
-    public function show($id)
+    private function generateDatesForThu($thu, $ngayBatDau, $ngayKetThuc)
     {
-        $buoi = BuoiHoc::with(['giangVien', 'lopHocPhan.monHoc'])->findOrFail($id);
-        return response()->json($buoi);
+        $thuMap = [
+            'Thứ 2' => Carbon::MONDAY,
+            'Thứ 3' => Carbon::TUESDAY,
+            'Thứ 4' => Carbon::WEDNESDAY,
+            'Thứ 5' => Carbon::THURSDAY,
+            'Thứ 6' => Carbon::FRIDAY,
+            'Thứ 7' => Carbon::SATURDAY,
+            'Chủ nhật' => Carbon::SUNDAY,
+        ];
+
+        $day = $thuMap[$thu] ?? null;
+        if (!$day) return [];
+
+        $period = CarbonPeriod::create($ngayBatDau, $ngayKetThuc);
+        $dates = [];
+
+        foreach ($period as $date) {
+            if ($date->dayOfWeek === $day) {
+                $dates[] = Carbon::parse($date);
+            }
+        }
+
+        return $dates;
+    }
+
+    /**
+     * 🔍 Kiểm tra trùng lịch học trong cùng lớp học phần
+     */
+    private function checkConflict($data)
+    {
+        $exists = BuoiHoc::where('maLopHP', $data['maLopHP'])
+            ->where('thu', $data['thu'])
+            ->where(function ($q) use ($data) {
+                $q->whereBetween('tietBatDau', [$data['tietBatDau'], $data['tietKetThuc']])
+                  ->orWhereBetween('tietKetThuc', [$data['tietBatDau'], $data['tietKetThuc']]);
+            })
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'tietBatDau' => '⚠️ Khung tiết này đã được sử dụng trong lớp học phần khác.',
+            ]);
+        }
     }
 
     /**
@@ -144,26 +195,7 @@ class BuoiHocController extends Controller
             'maGV'        => 'nullable|exists:giangvien,maGV',
         ]);
 
-        // 🔎 Kiểm tra trùng lịch nếu thay đổi thứ hoặc tiết
-        if (isset($data['thu']) || isset($data['tietBatDau']) || isset($data['tietKetThuc'])) {
-            $check = BuoiHoc::where('maLopHP', $buoi->maLopHP)
-                ->where('thu', $data['thu'] ?? $buoi->thu)
-                ->where('maBuoi', '!=', $buoi->maBuoi)
-                ->where(function ($q) use ($data, $buoi) {
-                    $start = $data['tietBatDau'] ?? $buoi->tietBatDau;
-                    $end   = $data['tietKetThuc'] ?? $buoi->tietKetThuc;
-                    $q->whereBetween('tietBatDau', [$start, $end])
-                      ->orWhereBetween('tietKetThuc', [$start, $end]);
-                })
-                ->exists();
-
-            if ($check) {
-                throw ValidationException::withMessages([
-                    'tietBatDau' => 'Khung tiết bị trùng với buổi học khác.',
-                ]);
-            }
-        }
-
+        $this->checkConflict(array_merge($buoi->toArray(), $data));
         $buoi->update($data);
 
         return response()->json([
