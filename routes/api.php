@@ -150,14 +150,15 @@ Route::prefix('v1')->group(function () {
 
         // ✅ Thêm route cập nhật thông tin giảng viên
         Route::put('{id}', [GiangVienController::class, 'update']);
-        // ✅ Route QR buổi học
-        Route::post('/buoihoc/{id}/qr', [BuoiHocController::class, 'generateQR']);   // tạo mã QR
-        Route::post('/buoihoc/{id}/clear-qr', [BuoiHocController::class, 'clearQR']); // xóa mã QR (kết thúc buổi học)
+      // ✅ Route QR code – thống nhất tham số là {idBuoiHoc}
+        Route::post('/buoihoc/{idBuoiHoc}/qr', [BuoiHocController::class, 'generateQR']);   // tạo mã QR
+        Route::post('/buoihoc/{idBuoiHoc}/clear-qr', [BuoiHocController::class, 'clearQR']); // xóa mã QR
 
-
-        // ✅ Điểm danh thủ công
-        Route::get('/buoihoc/{maBuoi}/diemdanh', [DiemDanhController::class, 'listByBuoi']);
+        Route::get('/buoihoc/{idBuoiHoc}/diemdanh', [DiemDanhController::class, 'listByBuoi']);
         Route::patch('/diemdanh/{id}', [DiemDanhController::class, 'updateStatus']);
+        // **Route lấy danh sách sinh viên theo buổi học**
+        Route::get('buoihoc/{id}/sinhvien', [BuoiHocController::class, 'getDanhSachSinhVien']);
+        Route::get('{id}/lophocphan', [LopHocPhanController::class, 'getLopHocPhanTheoGiangVien']);
     });
 
     /*
