@@ -158,7 +158,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('/diemdanh/{id}', [DiemDanhController::class, 'updateStatus']);
         // **Route lấy danh sách sinh viên theo buổi học**
         Route::get('buoihoc/{id}/sinhvien', [BuoiHocController::class, 'getDanhSachSinhVien']);
-        Route::get('/giangvien/{maGV}/lophocphan', [LopHocPhanController::class, 'getLopHocPhanTheoGiangVien']);
+        Route::get('{id}/lophocphan', [LopHocPhanController::class, 'getLopHocPhanTheoGiangVien']);
     });
 
     /*
