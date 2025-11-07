@@ -203,18 +203,17 @@ class SinhVienController extends Controller
             'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // Xóa ảnh cũ nếu có
+        // 🔹 Xóa ảnh cũ nếu có
         if ($user->anhDaiDien && Storage::exists(str_replace('storage/', 'public/', $user->anhDaiDien))) {
             Storage::delete(str_replace('storage/', 'public/', $user->anhDaiDien));
-            Log::info("[UpdateAvatar] Đã xóa ảnh cũ của SV {$user->maSV}");
         }
 
-        // Lưu ảnh mới
+        // 🔹 Lưu ảnh mới vào storage/app/public/sinhvien
         $file = $request->file('avatar');
         $fileName = $user->maSV . '_' . time() . '.' . $file->getClientOriginalExtension();
         $file->storeAs('public/sinhvien', $fileName);
 
-        // Lưu đường dẫn public
+        // 🔹 Lưu đúng đường dẫn public
         $publicPath = 'storage/sinhvien/' . $fileName;
         $user->anhDaiDien = $publicPath;
         $user->save();
