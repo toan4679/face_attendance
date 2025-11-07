@@ -200,19 +200,21 @@ class SinhVienController extends Controller
         ]);
 
         // 🔹 Xóa ảnh cũ nếu có
-        if ($user->anhDaiDien && Storage::exists('public/' . $user->anhDaiDien)) {
-            Storage::delete('public/' . $user->anhDaiDien);
+        if ($user->anhDaiDien && Storage::disk('public')->exists($user->anhDaiDien)) {
+            Storage::disk('public')->delete($user->anhDaiDien);
         }
 
-        // 🔹 Lưu ảnh mới
+        // 🔹 Lưu ảnh mới vào đúng disk "public"
         $file = $request->file('avatar');
         $fileName = $user->maSV . '_' . time() . '.' . $file->getClientOriginalExtension();
-        $file->storeAs('public/sinhvien', $fileName);
 
-        // 🔹 Cập nhật DB
+        Storage::disk('public')->putFileAs('sinhvien', $file, $fileName);
+
+        // 🔹 Lưu đường dẫn tương đối trong DB
         $user->anhDaiDien = 'sinhvien/' . $fileName;
         $user->save();
 
+        // 🔹 Trả URL công khai đúng
         $publicUrl = url('storage/sinhvien/' . $fileName);
         Log::info("[UpdateAvatar] Sinh viên {$user->maSV} upload ảnh mới => $publicUrl");
 
