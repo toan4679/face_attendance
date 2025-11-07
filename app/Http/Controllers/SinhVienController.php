@@ -147,6 +147,7 @@ class SinhVienController extends Controller
                 'email' => $user->email,
                 'lop' => optional($user->lop)->tenLop,
                 'nganh' => optional($user->nganh)->tenNganh,
+                'soDienThoai' => $user->soDienThoai,
                 'anhDaiDien' => $user->anhDaiDien
                     ? asset('storage/sinhvien/' . $user->anhDaiDien)
                     : asset('default_avatar.png'),
