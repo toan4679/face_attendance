@@ -10,6 +10,7 @@ use App\Models\DiemDanh;
 use App\Models\SinhVien;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SinhVienController extends Controller
 {
@@ -131,6 +132,71 @@ class SinhVienController extends Controller
             'absentCount' => $absentCount,
             'lateCount' => $lateCount,
             'weekRemaining' => $weekRemaining,
+        ]);
+    }
+
+    public function profile(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'maSV' => $user->maSV,
+                'hoTen' => $user->hoTen,
+                'email' => $user->email,
+                'lop' => optional($user->lop)->tenLop,
+                'nganh' => optional($user->nganh)->tenNganh,
+                'anhDaiDien' => $user->anhDaiDien
+                    ? asset('storage/sinhvien/' . $user->anhDaiDien)
+                    : asset('default_avatar.png'),
+            ]
+        ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'hoTen' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'soDienThoai' => 'nullable|string|max:15'
+        ]);
+
+        $user->update($request->only('hoTen', 'email', 'soDienThoai'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật thông tin thành công',
+            'data' => $user
+        ]);
+    }
+
+    public function updateAvatar(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        // Xóa ảnh cũ nếu có
+        if ($user->anhDaiDien && Storage::exists('public/sinhvien/' . $user->anhDaiDien)) {
+            Storage::delete('public/sinhvien/' . $user->anhDaiDien);
+        }
+
+        $file = $request->file('avatar');
+        $fileName = $user->maSV . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $file->storeAs('public/sinhvien', $fileName);
+
+        $user->anhDaiDien = $fileName;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật ảnh đại diện thành công',
+            'avatar_url' => asset('storage/sinhvien/' . $fileName)
         ]);
     }
 }
