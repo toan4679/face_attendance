@@ -6,6 +6,7 @@ use App\Models\BuoiHoc;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class BuoiHocController extends Controller
 {
@@ -190,5 +191,32 @@ class BuoiHocController extends Controller
     {
         BuoiHoc::destroy($id);
         return response()->json(['message' => '🗑 Xóa buổi học thành công']);
+    }
+
+    /**
+     * 🔹 Lấy danh sách sinh viên theo buổi học
+     */
+    public function getDanhSachSinhVien($idBuoiHoc)
+    {
+        $buoiHoc = BuoiHoc::find($idBuoiHoc);
+
+        if (!$buoiHoc) {
+            return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
+        }
+
+        $maLopHP = $buoiHoc->maLopHP;
+
+        // Lấy danh sách sinh viên của lớp học phần
+        $sinhViens = DB::table('sinhvien')
+            ->join('sinhvien_lophocphan', 'sinhvien.maSV', '=', 'sinhvien_lophocphan.maSV')
+            ->where('sinhvien_lophocphan.maLopHP', $maLopHP)
+            ->select(
+                'sinhvien.maSV as ma',
+                'sinhvien.ten',
+                DB::raw("IF(sinhvien.avatar IS NULL OR sinhvien.avatar = '', 'default_avatar.png', sinhvien.avatar) as avatarOrDefault")
+            )
+            ->get();
+
+        return response()->json($sinhViens);
     }
 }
