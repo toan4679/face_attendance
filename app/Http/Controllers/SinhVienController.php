@@ -41,8 +41,8 @@ class SinhVienController extends Controller
      */
     public function dashboard(Request $request)
     {
-        $user = $request->user(); // Sinh viên đang đăng nhập
-        $today = now()->toDateString();
+        $user = $request->user();
+        $date = $request->query('date', now()->toDateString()); // ✅ lấy ngày từ query
 
         $lichHoc = DB::table('dangkyhoc')
             ->join('lophocphan', 'dangkyhoc.maLopHP', '=', 'lophocphan.maLopHP')
@@ -53,7 +53,7 @@ class SinhVienController extends Controller
                 $join->on('buoihoc.maBuoi', '=', 'diemdanh.maBuoi')
                     ->where('diemdanh.maSV', '=', $user->maSV);
             })
-            ->whereDate('buoihoc.ngayHoc', $today)
+            ->whereDate('buoihoc.ngayHoc', $date) // ✅ dùng ngày truyền từ query
             ->select(
                 'monhoc.tenMon as monHoc',
                 'buoihoc.phongHoc',
@@ -73,10 +73,8 @@ class SinhVienController extends Controller
             )
             ->get();
 
-        Log::info("[Dashboard] Sinh viên {$user->maSV} - số buổi học hôm nay: " . $lichHoc->count());
-
         return response()->json([
-            'today' => $today,
+            'date' => $date,
             'classes' => $lichHoc
         ]);
     }
