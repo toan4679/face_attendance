@@ -204,8 +204,8 @@ class SinhVienController extends Controller
         ]);
 
         // 🔹 Xóa ảnh cũ nếu có
-        if ($user->anhDaiDien && Storage::exists(str_replace('storage/', 'public/', $user->anhDaiDien))) {
-            Storage::delete(str_replace('storage/', 'public/', $user->anhDaiDien));
+        if ($user->anhDaiDien && Storage::exists('public/sinhvien/' . basename($user->anhDaiDien))) {
+            Storage::delete('public/sinhvien/' . basename($user->anhDaiDien));
         }
 
         // 🔹 Lưu ảnh mới vào storage/app/public/sinhvien
@@ -213,17 +213,20 @@ class SinhVienController extends Controller
         $fileName = $user->maSV . '_' . time() . '.' . $file->getClientOriginalExtension();
         $file->storeAs('public/sinhvien', $fileName);
 
-        // 🔹 Lưu đúng đường dẫn public
-        $publicPath = 'storage/sinhvien/' . $fileName;
-        $user->anhDaiDien = $publicPath;
+        // 🔹 Lưu vào DB chỉ phần relative path (public/)
+        $user->anhDaiDien = 'public/sinhvien/' . $fileName;
         $user->save();
 
-        Log::info("[UpdateAvatar] SV {$user->maSV} upload ảnh mới: {$publicPath}");
+        // 🔹 Log để dễ debug
+        Log::info("[UpdateAvatar] Sinh viên {$user->maSV} upload ảnh mới => {$user->anhDaiDien}");
+
+        // 🔹 Tạo URL public hiển thị cho client
+        $avatarUrl = asset('storage/sinhvien/' . $fileName);
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật ảnh đại diện thành công',
-            'avatar_url' => url($publicPath)
+            'avatar_url' => $avatarUrl
         ]);
     }
 }
