@@ -139,6 +139,8 @@ Route::prefix('v1')->group(function () {
     */
     Route::prefix('giangvien')->middleware('auth:sanctum')->group(function () {
         Route::get('/lichday', [LichDayController::class, 'index']);
+        // ✅ Route mới: Lịch dạy hôm nay
+        Route::get('/{id}/lichday/homnay', [LichDayController::class, 'lichDayHomNay']);
         Route::get('/lophocphan', [LopHocPhanController::class, 'byGiangVien']);
         Route::get('/{id}/lophocphan', [GiangVienController::class, 'getLopHocPhan']);
         Route::get('/', [GiangVienController::class, 'getAll']);
