@@ -32,7 +32,7 @@ class LichHocController extends Controller
         $lichHoc = BuoiHoc::whereIn('maLopHP', $lopDangKy)
             ->with([
                 'lophocphan.monhoc',
-                'giangvien:id,hoTen,email',
+                'giangvien:maGV,hoTen,email',
             ])
             ->orderBy('ngayHoc', 'asc')
             ->get();
