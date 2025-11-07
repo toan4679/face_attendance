@@ -11,21 +11,28 @@ class BuoiHoc extends Model
 
     protected $table = 'buoihoc';
     protected $primaryKey = 'maBuoi';
+    public $timestamps = true; // có cột created_at và updated_at
+
     protected $fillable = [
         'maLopHP',
         'maGV',
-        'thu',          // ✅ thêm
-        'tietBatDau',   // ✅ thêm
-        'tietKetThuc',  // ✅ thêm
+        'thu',
+        'tietBatDau',
+        'tietKetThuc',
+        'ngayHoc',
+        'gioBatDau',
+        'gioKetThuc',
         'phongHoc',
-        'maQR'
+        'maQR',
     ];
 
+    // Quan hệ với bảng giảng viên
     public function giangVien()
     {
         return $this->belongsTo(GiangVien::class, 'maGV', 'maGV');
     }
 
+    // Quan hệ với bảng lớp học phần
     public function lopHocPhan()
     {
         return $this->belongsTo(LopHocPhan::class, 'maLopHP', 'maLopHP');
