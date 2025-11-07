@@ -169,11 +169,18 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/dashboard', [SinhVienController::class, 'dashboard']);
         Route::get('/dashboard/stats', [SinhVienController::class, 'stats']);
-        
-        // Khuôn mặt sinh viên
-        Route::post('/khuonmat', [KhuonMatController::class, 'store']);
-        Route::get('/khuonmat', [KhuonMatController::class, 'showMine']);
-        Route::delete('/khuonmat/{id}', [KhuonMatController::class, 'destroyMine']);
+
+
+        // 👤 Lấy thông tin sinh viên đang đăng nhập
+        Route::get('/profile', [SinhVienController::class, 'profile']);
+
+        // ✏️ Cập nhật thông tin sinh viên (họ tên, email, sđt,...)
+        Route::put('/profile', [SinhVienController::class, 'updateProfile']);
+
+        // 🖼️ Cập nhật ảnh đại diện
+        Route::post('/profile/avatar', [SinhVienController::class, 'updateAvatar']);
+
+        Route::post('/logout', [SinhVienController::class, 'logout']);
 
         // Check-in điểm danh
         Route::post('/attendance/check-in/qr', [DiemDanhController::class, 'checkInQR']);
