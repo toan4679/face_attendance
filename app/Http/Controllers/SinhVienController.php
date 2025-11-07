@@ -226,7 +226,7 @@ class SinhVienController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật ảnh đại diện thành công',
-            'avatar_url' => $avatarUrl
+            'avatar_url' => url('storage/sinhvien/' . $fileName)
         ]);
     }
 }
