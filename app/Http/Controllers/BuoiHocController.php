@@ -2,164 +2,77 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BuoiHoc;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use App\Models\BuoiHoc;
+use Illuminate\Support\Str;
 
 class BuoiHocController extends Controller
 {
-    // 🔹 Danh sách buổi học (lọc theo lớp học phần)
-    public function index(Request $request)
+    /**
+     * 📍 Lấy danh sách buổi học của giảng viên (theo mã GV)
+     */
+    public function getByGiangVien($maGV)
     {
-        $query = BuoiHoc::with(['giangVien', 'lopHocPhan.monHoc'])
-            ->orderByRaw("
-                FIELD(thu, 'Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật')
-            ")
-            ->orderBy('tietBatDau', 'asc');
+        $buoiHocs = BuoiHoc::where('maGV', $maGV)
+            ->with('lopHocPhan')
+            ->orderBy('ngayHoc', 'desc')
+            ->get();
 
-        if ($request->has('maLopHP')) {
-            $query->where('maLopHP', $request->get('maLopHP'));
-        }
-
-        return response()->json($query->get());
+        return response()->json($buoiHocs);
     }
 
-    // 🔹 Thêm buổi học
-    public function store(Request $request)
+    /**
+     * ✅ Tạo mã QR cho buổi học
+     */
+    public function generateQR(Request $request, $maBuoi)
     {
-        $data = $request->validate([
-            'maLopHP'     => 'required|exists:lophocphan,maLopHP',
-            'maGV'        => 'nullable|exists:giangvien,maGV',
-            'thu'         => 'required|string|max:20', // Thứ trong tuần
-            'tietBatDau'  => 'required|integer|min:1|max:12',
-            'tietKetThuc' => 'required|integer|gte:tietBatDau|max:12',
-            'phongHoc'    => 'required|string|max:50',
-            'maQR'        => 'nullable|string|max:255',
-        ]);
+        $buoiHoc = BuoiHoc::find($maBuoi);
 
-        // ❗ Kiểm tra trùng lịch trong cùng lớp học phần + thứ
-        $conflict = BuoiHoc::where('maLopHP', $data['maLopHP'])
-            ->where('thu', $data['thu'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('tietBatDau', [$data['tietBatDau'], $data['tietKetThuc']])
-                    ->orWhereBetween('tietKetThuc', [$data['tietBatDau'], $data['tietKetThuc']]);
-            })
-            ->exists();
-
-        if ($conflict) {
-            throw ValidationException::withMessages([
-                'tietBatDau' => 'Khung tiết này đã được sử dụng cho buổi học khác trong cùng lớp học phần.',
-            ]);
+        if (!$buoiHoc) {
+            return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
         }
 
-        $buoi = BuoiHoc::create($data);
-        return response()->json([
-            'message' => '✅ Thêm buổi học thành công',
-            'data'    => $buoi,
-        ], 201);
-    }
+        // Tạo mã QR ngẫu nhiên
+        $maQR = strtoupper(Str::random(8));
 
-    // 🔹 Xem chi tiết
-    public function show($id)
-    {
-        $buoi = BuoiHoc::with(['giangVien', 'lopHocPhan.monHoc'])->findOrFail($id);
-        return response()->json($buoi);
-    }
-
-    // 🔹 Cập nhật
-    // 🔹 Cập nhật
-    public function update(Request $request, $id)
-    {
-        $buoi = BuoiHoc::findOrFail($id);
-
-        $data = $request->validate([
-            'thu'         => 'sometimes|string|max:20',
-            'tietBatDau'  => 'sometimes|integer|min:1|max:12',
-            'tietKetThuc' => 'sometimes|integer|gte:tietBatDau|max:12',
-            'phongHoc'    => 'nullable|string|max:50',
-
-            // ✅ cho phép null hợp lệ
-            'maGV'        => 'nullable|exists:giangvien,maGV',
-
-            'maQR'        => 'nullable|string|max:255',
-        ]);
-
-        // ✅ kiểm tra trùng lịch (nếu thay đổi thứ hoặc tiết)
-        if (isset($data['thu']) || isset($data['tietBatDau']) || isset($data['tietKetThuc'])) {
-            $check = BuoiHoc::where('maLopHP', $buoi->maLopHP)
-                ->where('thu', $data['thu'] ?? $buoi->thu)
-                ->where('maBuoi', '!=', $buoi->maBuoi)
-                ->where(function ($q) use ($data, $buoi) {
-                    $start = $data['tietBatDau'] ?? $buoi->tietBatDau;
-                    $end   = $data['tietKetThuc'] ?? $buoi->tietKetThuc;
-                    $q->whereBetween('tietBatDau', [$start, $end])
-                        ->orWhereBetween('tietKetThuc', [$start, $end]);
-                })
-                ->exists();
-
-            if ($check) {
-                throw ValidationException::withMessages([
-                    'tietBatDau' => 'Khung tiết bị trùng với buổi học khác.',
-                ]);
-            }
-        }
-
-        $buoi->update($data);
+        $buoiHoc->maQR = $maQR;
+        $buoiHoc->save();
 
         return response()->json([
-            'message' => '✅ Cập nhật buổi học thành công',
-            'data'    => $buoi,
+            'message' => 'Tạo mã QR thành công',
+            'maQR' => $maQR,
+            'buoiHoc' => $buoiHoc,
         ]);
     }
 
-
-    // 🔹 Xóa
-    public function destroy($id)
+    /**
+     * ❌ Xóa mã QR khi kết thúc buổi học
+     */
+    public function clearQR($maBuoi)
     {
-        BuoiHoc::destroy($id);
-        return response()->json(['message' => '🗑 Xóa buổi học thành công']);
+        $buoiHoc = BuoiHoc::find($maBuoi);
+
+        if (!$buoiHoc) {
+            return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
+        }
+
+        $buoiHoc->maQR = null;
+        $buoiHoc->save();
+
+        return response()->json(['message' => 'Đã xóa mã QR thành công']);
     }
 
-    public function storeMultiple(Request $request)
+    /**
+     * 📅 Lấy thông tin chi tiết 1 buổi học
+     */
+    public function getDetail($maBuoi)
     {
-        $list = $request->input('list', []);
+        $buoiHoc = BuoiHoc::with(['giangVien', 'lopHocPhan'])->find($maBuoi);
 
-        if (empty($list)) {
-            return response()->json(['message' => 'Danh sách trống'], 400);
+        if (!$buoiHoc) {
+            return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
         }
 
-        $created = [];
-        foreach ($list as $item) {
-            $data = [
-                'maLopHP'     => $item['maLopHP'] ?? null,
-                'maGV'        => $item['maGV'] ?? null,
-                'thu'         => $item['thu'] ?? null,
-                'tietBatDau'  => $item['tietBatDau'] ?? null,
-                'tietKetThuc' => $item['tietKetThuc'] ?? null,
-                'phongHoc'    => $item['phongHoc'] ?? null,
-                'ngayHoc'     => $item['ngayHoc'] ?? null,
-                'gioBatDau'   => $item['gioBatDau'] ?? null,
-                'gioKetThuc'  => $item['gioKetThuc'] ?? null,
-            ];
-
-            // kiểm tra dữ liệu hợp lệ
-            $validated = validator($data, [
-                'maLopHP'     => 'required|exists:lophocphan,maLopHP',
-                'thu'         => 'required|string',
-                'tietBatDau'  => 'required|integer|min:1|max:12',
-                'tietKetThuc' => 'required|integer|gte:tietBatDau|max:12',
-                'phongHoc'    => 'required|string',
-                'ngayHoc'     => 'required|date',
-                'gioBatDau'   => 'nullable|string|max:10',
-                'gioKetThuc'  => 'nullable|string|max:10',
-            ])->validate();
-
-            $created[] = BuoiHoc::create($validated);
-        }
-
-        return response()->json([
-            'message' => '✅ Đã tạo ' . count($created) . ' buổi học thành công',
-            'count' => count($created),
-        ]);
+        return response()->json($buoiHoc);
     }
 }
