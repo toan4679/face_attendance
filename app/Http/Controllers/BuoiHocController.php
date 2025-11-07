@@ -42,7 +42,7 @@ class BuoiHocController extends Controller
             ->where('thu', $data['thu'])
             ->where(function ($q) use ($data) {
                 $q->whereBetween('tietBatDau', [$data['tietBatDau'], $data['tietKetThuc']])
-                  ->orWhereBetween('tietKetThuc', [$data['tietBatDau'], $data['tietKetThuc']]);
+                    ->orWhereBetween('tietKetThuc', [$data['tietBatDau'], $data['tietKetThuc']]);
             })
             ->exists();
 
@@ -68,49 +68,49 @@ class BuoiHocController extends Controller
 
     // 🔹 Cập nhật
     // 🔹 Cập nhật
-public function update(Request $request, $id)
-{
-    $buoi = BuoiHoc::findOrFail($id);
+    public function update(Request $request, $id)
+    {
+        $buoi = BuoiHoc::findOrFail($id);
 
-    $data = $request->validate([
-        'thu'         => 'sometimes|string|max:20',
-        'tietBatDau'  => 'sometimes|integer|min:1|max:12',
-        'tietKetThuc' => 'sometimes|integer|gte:tietBatDau|max:12',
-        'phongHoc'    => 'nullable|string|max:50',
+        $data = $request->validate([
+            'thu'         => 'sometimes|string|max:20',
+            'tietBatDau'  => 'sometimes|integer|min:1|max:12',
+            'tietKetThuc' => 'sometimes|integer|gte:tietBatDau|max:12',
+            'phongHoc'    => 'nullable|string|max:50',
 
-        // ✅ cho phép null hợp lệ
-        'maGV'        => 'nullable|exists:giangvien,maGV',
+            // ✅ cho phép null hợp lệ
+            'maGV'        => 'nullable|exists:giangvien,maGV',
 
-        'maQR'        => 'nullable|string|max:255',
-    ]);
+            'maQR'        => 'nullable|string|max:255',
+        ]);
 
-    // ✅ kiểm tra trùng lịch (nếu thay đổi thứ hoặc tiết)
-    if (isset($data['thu']) || isset($data['tietBatDau']) || isset($data['tietKetThuc'])) {
-        $check = BuoiHoc::where('maLopHP', $buoi->maLopHP)
-            ->where('thu', $data['thu'] ?? $buoi->thu)
-            ->where('maBuoi', '!=', $buoi->maBuoi)
-            ->where(function ($q) use ($data, $buoi) {
-                $start = $data['tietBatDau'] ?? $buoi->tietBatDau;
-                $end   = $data['tietKetThuc'] ?? $buoi->tietKetThuc;
-                $q->whereBetween('tietBatDau', [$start, $end])
-                  ->orWhereBetween('tietKetThuc', [$start, $end]);
-            })
-            ->exists();
+        // ✅ kiểm tra trùng lịch (nếu thay đổi thứ hoặc tiết)
+        if (isset($data['thu']) || isset($data['tietBatDau']) || isset($data['tietKetThuc'])) {
+            $check = BuoiHoc::where('maLopHP', $buoi->maLopHP)
+                ->where('thu', $data['thu'] ?? $buoi->thu)
+                ->where('maBuoi', '!=', $buoi->maBuoi)
+                ->where(function ($q) use ($data, $buoi) {
+                    $start = $data['tietBatDau'] ?? $buoi->tietBatDau;
+                    $end   = $data['tietKetThuc'] ?? $buoi->tietKetThuc;
+                    $q->whereBetween('tietBatDau', [$start, $end])
+                        ->orWhereBetween('tietKetThuc', [$start, $end]);
+                })
+                ->exists();
 
-        if ($check) {
-            throw ValidationException::withMessages([
-                'tietBatDau' => 'Khung tiết bị trùng với buổi học khác.',
-            ]);
+            if ($check) {
+                throw ValidationException::withMessages([
+                    'tietBatDau' => 'Khung tiết bị trùng với buổi học khác.',
+                ]);
+            }
         }
+
+        $buoi->update($data);
+
+        return response()->json([
+            'message' => '✅ Cập nhật buổi học thành công',
+            'data'    => $buoi,
+        ]);
     }
-
-    $buoi->update($data);
-
-    return response()->json([
-        'message' => '✅ Cập nhật buổi học thành công',
-        'data'    => $buoi,
-    ]);
-}
 
 
     // 🔹 Xóa
@@ -118,5 +118,48 @@ public function update(Request $request, $id)
     {
         BuoiHoc::destroy($id);
         return response()->json(['message' => '🗑 Xóa buổi học thành công']);
+    }
+
+    public function storeMultiple(Request $request)
+    {
+        $list = $request->input('list', []);
+
+        if (empty($list)) {
+            return response()->json(['message' => 'Danh sách trống'], 400);
+        }
+
+        $created = [];
+        foreach ($list as $item) {
+            $data = [
+                'maLopHP'     => $item['maLopHP'] ?? null,
+                'maGV'        => $item['maGV'] ?? null,
+                'thu'         => $item['thu'] ?? null,
+                'tietBatDau'  => $item['tietBatDau'] ?? null,
+                'tietKetThuc' => $item['tietKetThuc'] ?? null,
+                'phongHoc'    => $item['phongHoc'] ?? null,
+                'ngayHoc'     => $item['ngayHoc'] ?? null,
+                'gioBatDau'   => $item['gioBatDau'] ?? null,
+                'gioKetThuc'  => $item['gioKetThuc'] ?? null,
+            ];
+
+            // kiểm tra dữ liệu hợp lệ
+            $validated = validator($data, [
+                'maLopHP'     => 'required|exists:lophocphan,maLopHP',
+                'thu'         => 'required|string',
+                'tietBatDau'  => 'required|integer|min:1|max:12',
+                'tietKetThuc' => 'required|integer|gte:tietBatDau|max:12',
+                'phongHoc'    => 'required|string',
+                'ngayHoc'     => 'required|date',
+                'gioBatDau'   => 'nullable|string|max:10',
+                'gioKetThuc'  => 'nullable|string|max:10',
+            ])->validate();
+
+            $created[] = BuoiHoc::create($validated);
+        }
+
+        return response()->json([
+            'message' => '✅ Đã tạo ' . count($created) . ' buổi học thành công',
+            'count' => count($created),
+        ]);
     }
 }

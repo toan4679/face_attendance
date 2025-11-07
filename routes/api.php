@@ -106,6 +106,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('buoihoc', BuoiHocController::class)
             ->only(['index', 'store', 'show', 'update', 'destroy']);
 
+        Route::post('/v1/pdt/buoihoc/multiple', [BuoiHocController::class, 'storeMultiple']);
+
         // Gán lịch giảng dạy
         Route::post('/schedule/assign', [PDTController::class, 'assignSchedule']);
 
