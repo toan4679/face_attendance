@@ -234,10 +234,11 @@ class BuoiHocController extends Controller
             ->whereIn('maLop', $dsMaLop)
             ->select(
                 'maSV as ma',
-                'hoTen as ten', // đổi từ 'ten' thành 'hoTen'
-                DB::raw("IF(avatar IS NULL OR avatar = '', 'default_avatar.png', avatar) as avatarOrDefault")
+                'hoTen as ten',
+                DB::raw("IF(anhDaiDien IS NULL OR anhDaiDien = '', 'default_avatar.png', anhDaiDien) as avatarOrDefault")
             )
             ->get();
+
         return response()->json([
             'message' => 'Danh sách sinh viên',
             'data' => $sinhVien
