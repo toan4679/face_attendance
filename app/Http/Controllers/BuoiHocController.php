@@ -196,6 +196,9 @@ class BuoiHocController extends Controller
     /**
      * 🔹 Lấy danh sách sinh viên theo buổi học
      */
+    /**
+     * 🔹 Lấy danh sách sinh viên theo buổi học
+     */
     public function getDanhSachSinhVien($idBuoiHoc)
     {
         $buoiHoc = BuoiHoc::find($idBuoiHoc);
@@ -204,8 +207,28 @@ class BuoiHocController extends Controller
             return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
         }
 
-        $lopHocPhan = $buoiHoc->lopHocPhan; // quan hệ BuoiHoc -> LopHocPhan
-        $dsMaLop = json_decode($lopHocPhan->dsMaLop, true); // ["1","2","3"]
+        $lopHocPhan = $buoiHoc->lopHocPhan;
+
+        // Kiểm tra quan hệ và dsMaLop
+        if (!$lopHocPhan || empty($lopHocPhan->dsMaLop)) {
+            return response()->json([
+                'message' => 'Buổi học này chưa có lớp học phần hoặc dsMaLop trống',
+                'data' => []
+            ]);
+        }
+
+        // Giải mã JSON an toàn
+        $dsMaLop = json_decode($lopHocPhan->dsMaLop, true);
+        if (!is_array($dsMaLop)) {
+            $dsMaLop = []; // đảm bảo luôn là mảng
+        }
+
+        if (empty($dsMaLop)) {
+            return response()->json([
+                'message' => 'Danh sách mã lớp trống',
+                'data' => []
+            ]);
+        }
 
         // Lấy sinh viên thuộc các lớp trong dsMaLop
         $sinhVien = DB::table('sinhvien')
@@ -217,6 +240,9 @@ class BuoiHocController extends Controller
             )
             ->get();
 
-        return response()->json($sinhVien);
+        return response()->json([
+            'message' => 'Danh sách sinh viên',
+            'data' => $sinhVien
+        ]);
     }
 }
