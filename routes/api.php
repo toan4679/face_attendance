@@ -166,6 +166,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/lichhoc', [LichHocController::class, 'index']);
         Route::get('/diemdanh', [DiemDanhController::class, 'history']);
 
+
+        Route::get('/dashboard', [SinhVienController::class, 'dashboard']);
+        Route::get('/dashboard/stats', [SinhVienController::class, 'stats']);
+        
         // Khuôn mặt sinh viên
         Route::post('/khuonmat', [KhuonMatController::class, 'store']);
         Route::get('/khuonmat', [KhuonMatController::class, 'showMine']);
