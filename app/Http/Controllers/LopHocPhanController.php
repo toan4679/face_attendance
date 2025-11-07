@@ -9,12 +9,21 @@ use Illuminate\Support\Facades\Log;
 
 class LopHocPhanController extends Controller
 {
+    /**
+     * 🔹 Lấy toàn bộ lớp học phần
+     */
     public function index()
     {
         $data = LopHocPhan::with(['monHoc', 'giangVien'])->get();
-        return response()->json($data);
+        return response()->json([
+            'message' => 'Danh sách tất cả lớp học phần',
+            'data' => $data
+        ]);
     }
 
+    /**
+     * 🔹 Thêm lớp học phần mới
+     */
     public function store(Request $request)
     {
         try {
@@ -31,12 +40,16 @@ class LopHocPhanController extends Controller
             ]);
 
             if (isset($data['dsMaLop'])) {
-                $data['dsMaLop'] = json_encode($data['dsMaLop']); // ✅ lưu mảng thành JSON
+                $data['dsMaLop'] = json_encode($data['dsMaLop']);
             }
 
             $lop = LopHocPhan::create($data);
-            return response()->json($lop, 201);
-        } catch (\Exception $e) {
+
+            return response()->json([
+                'message' => 'Thêm lớp học phần thành công',
+                'data' => $lop
+            ], 201);
+        } catch (\Throwable $e) {
             Log::error('❌ Lỗi thêm lớp học phần: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Đã xảy ra lỗi khi thêm lớp học phần',
@@ -45,6 +58,9 @@ class LopHocPhanController extends Controller
         }
     }
 
+    /**
+     * 🔹 Cập nhật lớp học phần
+     */
     public function update(Request $request, $id)
     {
         try {
@@ -67,7 +83,11 @@ class LopHocPhanController extends Controller
             }
 
             $lop->update($data);
-            return response()->json($lop);
+
+            return response()->json([
+                'message' => 'Cập nhật lớp học phần thành công',
+                'data' => $lop
+            ]);
         } catch (\Throwable $e) {
             Log::error('❌ Lỗi cập nhật lớp học phần: ' . $e->getMessage());
             return response()->json([
@@ -77,42 +97,46 @@ class LopHocPhanController extends Controller
         }
     }
 
+    /**
+     * 🔹 Hiển thị chi tiết lớp học phần
+     */
     public function show($id)
     {
         $lop = LopHocPhan::with(['monHoc', 'giangVien', 'buoiHoc'])->findOrFail($id);
-        return response()->json($lop);
-    }
 
-    public function destroy($id)
-    {
-        LopHocPhan::destroy($id);
-        return response()->json(['message' => 'Xóa lớp học phần thành công']);
+        return response()->json([
+            'message' => 'Chi tiết lớp học phần',
+            'data' => $lop
+        ]);
     }
 
     /**
-     * 🔍 Lấy danh sách sinh viên theo Lớp học phần
+     * 🔹 Xóa lớp học phần
+     */
+    public function destroy($id)
+    {
+        LopHocPhan::destroy($id);
+
+        return response()->json([
+            'message' => 'Xóa lớp học phần thành công'
+        ]);
+    }
+
+    /**
+     * 🔍 Lấy danh sách sinh viên theo lớp học phần
      */
     public function getSinhVienByLopHocPhan($maLopHP)
     {
         try {
             $lopHP = LopHocPhan::findOrFail($maLopHP);
 
-            // ✅ Chuẩn hóa dsMaLop
             $dsMaLop = $lopHP->dsMaLop ?? [];
 
             if (is_string($dsMaLop)) {
-                // Nếu lưu dạng JSON "[1,2,3]"
-                if (str_contains($dsMaLop, '[')) {
-                    $dsMaLop = json_decode($dsMaLop, true);
-                } else {
-                    // Nếu lưu dạng "1,2,3"
-                    $dsMaLop = array_filter(explode(',', $dsMaLop));
-                }
+                $dsMaLop = str_contains($dsMaLop, '[') ? json_decode($dsMaLop, true) : explode(',', $dsMaLop);
             }
 
-            if (!is_array($dsMaLop)) {
-                $dsMaLop = [];
-            }
+            if (!is_array($dsMaLop)) $dsMaLop = [];
 
             if (empty($dsMaLop)) {
                 return response()->json([
@@ -122,7 +146,6 @@ class LopHocPhanController extends Controller
                 ]);
             }
 
-            // ✅ Lấy danh sách sinh viên theo nhiều lớp hành chính
             $sinhViens = SinhVien::whereIn('maLop', $dsMaLop)
                 ->select('maSV', 'maSo', 'hoTen', 'email', 'maLop', 'anhDaiDien')
                 ->get();
@@ -143,7 +166,7 @@ class LopHocPhanController extends Controller
     }
 
     /**
-     * 📘 Danh sách Lớp học phần do giảng viên phụ trách
+     * 📘 Lấy danh sách lớp học phần do giảng viên phụ trách
      */
     public function byGiangVien(Request $request)
     {
@@ -166,12 +189,12 @@ class LopHocPhanController extends Controller
 
             return response()->json([
                 'giangVien' => [
-                    'maGV'  => $user->maGV,
+                    'maGV' => $user->maGV,
                     'hoTen' => $user->hoTen ?? null,
                     'email' => $user->email ?? null,
                 ],
                 'count' => $ds->count(),
-                'data'  => $ds,
+                'data' => $ds,
             ]);
         } catch (\Throwable $e) {
             Log::error('byGiangVien error: ' . $e->getMessage());
@@ -210,6 +233,30 @@ class LopHocPhanController extends Controller
             return response()->json([
                 'message' => 'Không thể gán lớp hành chính',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 🔹 Lấy tất cả lớp học phần của giảng viên theo mã
+     */
+    public function getLopHocPhanTheoGiangVien($maGV)
+    {
+        try {
+            $lopHocPhan = LopHocPhan::with(['monHoc', 'giangVien'])
+                ->where('maGV', $maGV)
+                ->orderByDesc('created_at')
+                ->get();
+
+            return response()->json([
+                'message' => 'Danh sách lớp học phần',
+                'data' => $lopHocPhan
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('getLopHocPhanTheoGiangVien error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Lỗi: ' . $e->getMessage(),
+                'data' => []
             ], 500);
         }
     }
