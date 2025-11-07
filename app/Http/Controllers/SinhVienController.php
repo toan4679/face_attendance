@@ -56,6 +56,15 @@ class SinhVienController extends Controller
                 'giangvien.hoTen as tenGV',
                 DB::raw("COALESCE(diemdanh.trangThai, 'Chưa điểm danh') as trangThai")
             )
+            ->groupBy(
+                'buoihoc.maBuoi',
+                'monhoc.tenMon',
+                'buoihoc.phongHoc',
+                'buoihoc.gioBatDau',
+                'buoihoc.gioKetThuc',
+                'giangvien.hoTen',
+                'diemdanh.trangThai'
+            )
             ->get();
 
         return response()->json([
@@ -63,6 +72,7 @@ class SinhVienController extends Controller
             'classes' => $lichHoc
         ]);
     }
+
 
 
     public function lichHoc(Request $request)
