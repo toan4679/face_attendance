@@ -230,16 +230,14 @@ class BuoiHocController extends Controller
             ]);
         }
 
-        // Lấy sinh viên thuộc các lớp trong dsMaLop
         $sinhVien = DB::table('sinhvien')
             ->whereIn('maLop', $dsMaLop)
             ->select(
                 'maSV as ma',
-                'ten',
+                'hoTen as ten', // đổi từ 'ten' thành 'hoTen'
                 DB::raw("IF(avatar IS NULL OR avatar = '', 'default_avatar.png', avatar) as avatarOrDefault")
             )
             ->get();
-
         return response()->json([
             'message' => 'Danh sách sinh viên',
             'data' => $sinhVien
