@@ -7,21 +7,19 @@ use App\Models\DangKyHoc;
 use App\Models\BuoiHoc;
 use App\Models\DiemDanh;
 use App\Models\SinhVien;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class SinhVienController extends Controller
 {
     /**
-     * 🔹 Lấy danh sách sinh viên
+     * 📚 Danh sách sinh viên
      */
     public function index()
     {
         try {
             $sinhViens = SinhVien::with('lop', 'nganh')->get();
-
-            Log::info('[SinhVienController] Lấy danh sách sinh viên thành công.');
 
             return response()->json([
                 'success' => true,
@@ -29,7 +27,7 @@ class SinhVienController extends Controller
                 'data' => $sinhViens,
             ]);
         } catch (\Exception $e) {
-            Log::error('[SinhVienController] Lỗi lấy danh sách sinh viên: ' . $e->getMessage());
+            Log::error('Lỗi lấy danh sách sinh viên: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi lấy danh sách sinh viên.',
@@ -39,11 +37,11 @@ class SinhVienController extends Controller
     }
 
     /**
-     * 🔹 Dashboard - Lịch học hôm nay của sinh viên
+     * 📅 Dashboard - Lịch học hôm nay
      */
     public function dashboard(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user(); // Sinh viên đang đăng nhập
         $today = now()->toDateString();
 
         $lichHoc = DB::table('dangkyhoc')
@@ -84,7 +82,7 @@ class SinhVienController extends Controller
     }
 
     /**
-     * 🔹 Lấy toàn bộ lịch học của sinh viên
+     * 📘 Lấy lịch học chi tiết
      */
     public function lichHoc(Request $request)
     {
@@ -92,14 +90,11 @@ class SinhVienController extends Controller
         $lich = DangKyHoc::with('lophocphan.buoihoc')
             ->where('maSV', $sv->maSV)
             ->get();
-
-        Log::info("[SinhVienController] Lấy lịch học của SV: {$sv->maSV}");
-
         return response()->json($lich);
     }
 
     /**
-     * 🔹 Thống kê Dashboard
+     * 📊 Thống kê dashboard
      */
     public function dashboardStats(Request $request)
     {
@@ -113,7 +108,9 @@ class SinhVienController extends Controller
         $weekStart = now()->startOfWeek()->toDateString();
         $weekEnd = now()->endOfWeek()->toDateString();
 
-        $lopDangKy = DangKyHoc::where('maSV', $user->maSV)->pluck('maLopHP')->toArray();
+        $lopDangKy = DangKyHoc::where('maSV', $user->maSV)
+            ->pluck('maLopHP')
+            ->toArray();
 
         $todayClasses = BuoiHoc::whereIn('maLopHP', $lopDangKy)
             ->whereDate('ngayHoc', $today)
@@ -131,7 +128,7 @@ class SinhVienController extends Controller
             ->whereBetween('ngayHoc', [$today, $weekEnd])
             ->count();
 
-        Log::info("[DashboardStats] SV: {$user->maSV} - Có mặt: $presentCount, Vắng: $absentCount, Đi muộn: $lateCount");
+        Log::info("[Dashboard] Sinh viên {$user->maSV} - Thống kê tuần: Có mặt=$presentCount, Vắng=$absentCount, Đi muộn=$lateCount");
 
         return response()->json([
             'maSV' => $user->maSV,
@@ -145,32 +142,31 @@ class SinhVienController extends Controller
     }
 
     /**
-     * 🔹 Thông tin profile sinh viên
+     * 👤 Lấy thông tin cá nhân sinh viên
      */
     public function profile(Request $request)
     {
         $user = $request->user();
-
         Log::info("[Profile] Lấy thông tin sinh viên {$user->maSV}");
 
         return response()->json([
             'success' => true,
             'data' => [
-                'maSV' => (string)$user->maSV,
+                'maSV' => $user->maSV,
                 'hoTen' => $user->hoTen,
                 'email' => $user->email,
                 'lop' => optional($user->lop)->tenLop,
                 'nganh' => optional($user->nganh)->tenNganh,
                 'soDienThoai' => $user->soDienThoai,
                 'anhDaiDien' => $user->anhDaiDien
-                    ? url($user->anhDaiDien)
-                    : asset('default_avatar.png'),
+                    ? url('storage/' . $user->anhDaiDien)
+                    : url('storage/default_avatar.png'),
             ]
         ]);
     }
 
     /**
-     * 🔹 Cập nhật thông tin sinh viên (không cho đổi email)
+     * ✏️ Cập nhật thông tin sinh viên
      */
     public function updateProfile(Request $request)
     {
@@ -183,7 +179,7 @@ class SinhVienController extends Controller
 
         $user->update($request->only('hoTen', 'soDienThoai'));
 
-        Log::info("[UpdateProfile] SV {$user->maSV} cập nhật thông tin cá nhân.");
+        Log::info("[UpdateProfile] Sinh viên {$user->maSV} cập nhật thông tin cá nhân.");
 
         return response()->json([
             'success' => true,
@@ -193,7 +189,7 @@ class SinhVienController extends Controller
     }
 
     /**
-     * 🔹 Cập nhật ảnh đại diện sinh viên
+     * 🖼️ Cập nhật ảnh đại diện
      */
     public function updateAvatar(Request $request)
     {
@@ -204,29 +200,26 @@ class SinhVienController extends Controller
         ]);
 
         // 🔹 Xóa ảnh cũ nếu có
-        if ($user->anhDaiDien && Storage::exists('public/sinhvien/' . basename($user->anhDaiDien))) {
-            Storage::delete('public/sinhvien/' . basename($user->anhDaiDien));
+        if ($user->anhDaiDien && Storage::exists('public/' . $user->anhDaiDien)) {
+            Storage::delete('public/' . $user->anhDaiDien);
         }
 
-        // 🔹 Lưu ảnh mới vào storage/app/public/sinhvien
+        // 🔹 Lưu ảnh mới
         $file = $request->file('avatar');
         $fileName = $user->maSV . '_' . time() . '.' . $file->getClientOriginalExtension();
         $file->storeAs('public/sinhvien', $fileName);
 
-        // 🔹 Lưu vào DB chỉ phần relative path (public/)
-        $user->anhDaiDien = 'public/sinhvien/' . $fileName;
+        // 🔹 Cập nhật DB
+        $user->anhDaiDien = 'sinhvien/' . $fileName;
         $user->save();
 
-        // 🔹 Log để dễ debug
-        Log::info("[UpdateAvatar] Sinh viên {$user->maSV} upload ảnh mới => {$user->anhDaiDien}");
-
-        // 🔹 Tạo URL public hiển thị cho client
-        $avatarUrl = asset('storage/sinhvien/' . $fileName);
+        $publicUrl = url('storage/sinhvien/' . $fileName);
+        Log::info("[UpdateAvatar] Sinh viên {$user->maSV} upload ảnh mới => $publicUrl");
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật ảnh đại diện thành công',
-            'avatar_url' => url('storage/sinhvien/' . $fileName)
+            'avatar_url' => $publicUrl,
         ]);
     }
 }
