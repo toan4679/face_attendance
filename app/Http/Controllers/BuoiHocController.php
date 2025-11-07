@@ -48,7 +48,7 @@ class BuoiHocController extends Controller
             ->where('phongHoc', $data['phongHoc'])
             ->where(function ($q) use ($data) {
                 $q->whereBetween('tietBatDau', [$data['tietBatDau'], $data['tietKetThuc']])
-                  ->orWhereBetween('tietKetThuc', [$data['tietBatDau'], $data['tietKetThuc']]);
+                    ->orWhereBetween('tietKetThuc', [$data['tietBatDau'], $data['tietKetThuc']]);
             })
             ->exists();
 
@@ -94,7 +94,7 @@ class BuoiHocController extends Controller
                 ->where('phongHoc', $validated['phongHoc'])
                 ->where(function ($q) use ($validated) {
                     $q->whereBetween('tietBatDau', [$validated['tietBatDau'], $validated['tietKetThuc']])
-                      ->orWhereBetween('tietKetThuc', [$validated['tietBatDau'], $validated['tietKetThuc']]);
+                        ->orWhereBetween('tietKetThuc', [$validated['tietBatDau'], $validated['tietKetThuc']]);
                 })
                 ->exists();
 
@@ -204,19 +204,19 @@ class BuoiHocController extends Controller
             return response()->json(['message' => 'Không tìm thấy buổi học'], 404);
         }
 
-        $maLopHP = $buoiHoc->maLopHP;
+        $lopHocPhan = $buoiHoc->lopHocPhan; // quan hệ BuoiHoc -> LopHocPhan
+        $dsMaLop = json_decode($lopHocPhan->dsMaLop, true); // ["1","2","3"]
 
-        // Lấy danh sách sinh viên của lớp học phần
-        $sinhViens = DB::table('sinhvien')
-            ->join('sinhvien_lophocphan', 'sinhvien.maSV', '=', 'sinhvien_lophocphan.maSV')
-            ->where('sinhvien_lophocphan.maLopHP', $maLopHP)
+        // Lấy sinh viên thuộc các lớp trong dsMaLop
+        $sinhVien = DB::table('sinhvien')
+            ->whereIn('maLop', $dsMaLop)
             ->select(
-                'sinhvien.maSV as ma',
-                'sinhvien.ten',
-                DB::raw("IF(sinhvien.avatar IS NULL OR sinhvien.avatar = '', 'default_avatar.png', sinhvien.avatar) as avatarOrDefault")
+                'maSV as ma',
+                'ten',
+                DB::raw("IF(avatar IS NULL OR avatar = '', 'default_avatar.png', avatar) as avatarOrDefault")
             )
             ->get();
 
-        return response()->json($sinhViens);
+        return response()->json($sinhVien);
     }
 }
