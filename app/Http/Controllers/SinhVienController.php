@@ -42,7 +42,9 @@ class SinhVienController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        $date = $request->query('date', now()->toDateString()); // ✅ lấy ngày từ query
+        $date = $request->query('date', now()->toDateString());
+
+        Log::info("[Dashboard] Sinh viên {$user->maSV} xem lịch ngày {$date}");
 
         $lichHoc = DB::table('dangkyhoc')
             ->join('lophocphan', 'dangkyhoc.maLopHP', '=', 'lophocphan.maLopHP')
@@ -53,17 +55,20 @@ class SinhVienController extends Controller
                 $join->on('buoihoc.maBuoi', '=', 'diemdanh.maBuoi')
                     ->where('diemdanh.maSV', '=', $user->maSV);
             })
-            ->whereDate('buoihoc.ngayHoc', $date) // ✅ dùng ngày truyền từ query
+            ->where('dangkyhoc.maSV', $user->maSV) // ✅ đảm bảo chỉ sinh viên hiện tại
+            ->whereDate('buoihoc.ngayHoc', $date)
             ->select(
                 'monhoc.tenMon as monHoc',
                 'buoihoc.phongHoc',
                 'buoihoc.gioBatDau',
                 'buoihoc.gioKetThuc',
+                'buoihoc.ngayHoc', // ✅ hiển thị đúng ngày
                 'giangvien.hoTen as tenGV',
                 DB::raw("COALESCE(diemdanh.trangThai, 'Chưa điểm danh') as trangThai")
             )
             ->groupBy(
                 'buoihoc.maBuoi',
+                'buoihoc.ngayHoc',
                 'monhoc.tenMon',
                 'buoihoc.phongHoc',
                 'buoihoc.gioBatDau',
@@ -71,13 +76,15 @@ class SinhVienController extends Controller
                 'giangvien.hoTen',
                 'diemdanh.trangThai'
             )
+            ->orderBy('buoihoc.gioBatDau')
             ->get();
 
         return response()->json([
             'date' => $date,
-            'classes' => $lichHoc
+            'classes' => $lichHoc,
         ]);
     }
+
 
     /**
      * 📘 Lấy lịch học chi tiết
