@@ -15,8 +15,8 @@ class Khoa extends Model
 
     protected $fillable = ['tenKhoa', 'moTa'];
 
-    public function boMon()
-    {
-        return $this->hasMany(BoMon::class, 'maKhoa', 'maKhoa');
-    }
+    // public function boMon()
+    // {
+    //     return $this->hasMany(BoMon::class, 'maKhoa', 'maKhoa');
+    // }
 }
